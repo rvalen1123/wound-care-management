@@ -48,7 +48,7 @@
         <!-- Monthly Orders Chart -->
         <div class="h-80 relative">
           <BarChart
-            v-if="monthlyOrdersData"
+            v-if="monthlyOrdersData && monthlyOrdersData.labels"
             :data="monthlyOrdersData"
             :options="chartOptions"
           />
@@ -56,7 +56,7 @@
         <!-- Payment Status Chart -->
         <div class="h-80 relative">
           <PieChart
-            v-if="paymentStatusData"
+            v-if="paymentStatusData && paymentStatusData.labels"
             :data="paymentStatusData"
             :options="pieChartOptions"
           />
@@ -122,7 +122,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -214,25 +214,30 @@ export default {
       }
     ])
 
-    const monthlyOrdersData = computed(() => ({
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        label: 'Monthly Orders',
-        data: [12, 15, 18, 14, 16, 19],
-        backgroundColor: '#4CAF50'
-      }]
-    }))
+    const monthlyOrdersData = ref(null)
+    const paymentStatusData = ref(null)
+    const chartOptions = ref(defaultBarChartOptions)
+    const pieChartOptions = ref(defaultChartOptions)
 
-    const paymentStatusData = computed(() => ({
-      labels: ['Paid', 'Pending', 'Delinquent'],
-      datasets: [{
-        data: [65, 25, 10],
-        backgroundColor: ['#4CAF50', '#FFA726', '#EF5350']
-      }]
-    }))
+    onMounted(() => {
+      monthlyOrdersData.value = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Monthly Orders',
+          data: [12, 15, 18, 14, 16, 19],
+          backgroundColor: '#4CAF50'
+        }]
+      }
 
-    const chartOptions = computed(() => defaultBarChartOptions)
-    const pieChartOptions = computed(() => defaultChartOptions)
+      paymentStatusData.value = {
+        labels: ['Paid', 'Pending', 'Delinquent'],
+        datasets: [{
+          label: 'Payment Status',
+          data: [65, 25, 10],
+          backgroundColor: ['#4CAF50', '#FFA726', '#EF5350']
+        }]
+      }
+    })
 
     const formatNumber = (value, isCurrency = false) => {
       const formatter = new Intl.NumberFormat('en-US', {
