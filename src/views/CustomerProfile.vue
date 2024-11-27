@@ -122,8 +122,8 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { Bar, Pie } from 'vue-chartjs'
+import { ref, computed, onMounted, defineComponent } from 'vue'
+import { Bar as BarChart, Pie as PieChart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   Title,
@@ -145,30 +145,11 @@ ChartJS.register(
   ArcElement
 )
 
-const defaultChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom'
-    }
-  }
-}
-
-const defaultBarChartOptions = {
-  ...defaultChartOptions,
-  scales: {
-    y: {
-      beginAtZero: true
-    }
-  }
-}
-
-export default {
+export default defineComponent({
   name: 'CustomerProfile',
   components: {
-    BarChart: Bar,
-    PieChart: Pie
+    BarChart,
+    PieChart
   },
   setup() {
     const loading = ref(false)
@@ -214,29 +195,61 @@ export default {
       }
     ])
 
-    const monthlyOrdersData = ref(null)
-    const paymentStatusData = ref(null)
-    const chartOptions = ref(defaultBarChartOptions)
-    const pieChartOptions = ref(defaultChartOptions)
+    const monthlyOrdersData = ref({
+      labels: [],
+      datasets: []
+    })
+    const paymentStatusData = ref({
+      labels: [],
+      datasets: []
+    })
+
+    const chartOptions = ref({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    })
+
+    const pieChartOptions = ref({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    })
 
     onMounted(() => {
-      monthlyOrdersData.value = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: 'Monthly Orders',
-          data: [12, 15, 18, 14, 16, 19],
-          backgroundColor: '#4CAF50'
-        }]
-      }
+      // Initialize chart data after component is mounted
+      setTimeout(() => {
+        monthlyOrdersData.value = {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [{
+            label: 'Monthly Orders',
+            data: [12, 15, 18, 14, 16, 19],
+            backgroundColor: '#4CAF50'
+          }]
+        }
 
-      paymentStatusData.value = {
-        labels: ['Paid', 'Pending', 'Delinquent'],
-        datasets: [{
-          label: 'Payment Status',
-          data: [65, 25, 10],
-          backgroundColor: ['#4CAF50', '#FFA726', '#EF5350']
-        }]
-      }
+        paymentStatusData.value = {
+          labels: ['Paid', 'Pending', 'Delinquent'],
+          datasets: [{
+            label: 'Payment Status',
+            data: [65, 25, 10],
+            backgroundColor: ['#4CAF50', '#FFA726', '#EF5350']
+          }]
+        }
+      }, 0)
     })
 
     const formatNumber = (value, isCurrency = false) => {
@@ -283,7 +296,7 @@ export default {
       filteredOrders
     }
   }
-}
+})
 </script>
 
 <style scoped>
