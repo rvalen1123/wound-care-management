@@ -30,7 +30,7 @@ export default createStore({
     }
   },
   actions: {
-    async fetchOrders({ dispatch }) {
+    async fetchOrders() {
       // Placeholder for API call to fetch orders
     },
     async createOrder({ commit }, orderData) {

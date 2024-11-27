@@ -12,7 +12,17 @@
         
         <div id="googleButton"></div>
 
-        <Button
+        <div class="flex justify-center">
+          <PrimeButton
+            v-if="!isAuthenticated"
+            class="p-button-primary"
+            label="Sign in with Google"
+            icon="pi pi-google"
+            @click="handleAuth"
+          />
+        </div>
+
+        <PrimeButton
           v-if="isAuthenticated"
           class="w-full p-button-secondary"
           label="Sign Out"
@@ -34,7 +44,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/services/auth.service'
 
 export default {
-  name: 'Login',
+  name: 'LoginPage',
   setup() {
     const router = useRouter()
     const error = ref('')

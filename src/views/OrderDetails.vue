@@ -5,13 +5,13 @@
         Order Details #{{ order.id }}
       </h1>
       <div v-if="isAdmin" class="flex gap-2">
-        <Button
+        <PrimeButton
           icon="pi pi-pencil"
           label="Edit"
           class="p-button-warning"
           @click="showEditDialog = true"
         />
-        <Button
+        <PrimeButton
           icon="pi pi-trash"
           label="Delete"
           class="p-button-danger"
@@ -38,7 +38,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">Status:</span>
-            <Tag :value="order.status" 
+            <PrimeTag :value="order.status" 
                  :severity="getStatusSeverity(order.status)"
                  class="text-sm" />
           </div>
@@ -104,23 +104,23 @@
     <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
       <h2 class="text-xl font-semibold mb-4">Product Details</h2>
       <DataTable :value="[order.productDetails]" class="p-datatable-sm">
-        <Column field="product" header="Product"></Column>
-        <Column field="qCode" header="Q Code"></Column>
-        <Column field="units" header="Units">
+        <PrimeColumn field="product" header="Product"></PrimeColumn>
+        <PrimeColumn field="qCode" header="Q Code"></PrimeColumn>
+        <PrimeColumn field="units" header="Units">
           <template #body="slotProps">
             {{ slotProps.data.units }}
           </template>
-        </Column>
-        <Column field="pricePerUnit" header="Price/Unit">
+        </PrimeColumn>
+        <PrimeColumn field="pricePerUnit" header="Price/Unit">
           <template #body="slotProps">
             ${{ formatNumber(slotProps.data.pricePerUnit) }}
           </template>
-        </Column>
-        <Column field="totalPrice" header="Total">
+        </PrimeColumn>
+        <PrimeColumn field="totalPrice" header="Total">
           <template #body="slotProps">
             ${{ formatNumber(slotProps.data.pricePerUnit * slotProps.data.units) }}
           </template>
-        </Column>
+        </PrimeColumn>
       </DataTable>
     </div>
 
@@ -182,18 +182,18 @@
 
     <!-- Action Buttons -->
     <div class="mt-6 flex gap-4">
-      <Button label="Download Invoice" 
+      <PrimeButton label="Download Invoice" 
               icon="pi pi-file-pdf" 
               class="p-button-primary" 
               @click="downloadInvoice" />
-      <Button label="Print Order Details" 
+      <PrimeButton label="Print Order Details" 
               icon="pi pi-print" 
               class="p-button-secondary" 
               @click="printOrder" />
     </div>
 
     <!-- Edit Dialog -->
-    <Dialog
+    <PrimeDialog
       v-model:visible="showEditDialog"
       header="Edit Order"
       :modal="true"
@@ -210,7 +210,7 @@
         </div>
         <div class="field">
           <label for="dateOfService">Date of Service</label>
-          <Calendar
+          <PrimeCalendar
             id="dateOfService"
             v-model="editedOrder.dateOfService"
             dateFormat="mm/dd/yy"
@@ -219,7 +219,7 @@
         </div>
         <div class="field">
           <label for="typeOfGraft">Type of Graft</label>
-          <Dropdown
+          <PrimeDropdown
             id="typeOfGraft"
             v-model="editedOrder.typeOfGraft"
             :options="graftTypes"
@@ -247,7 +247,7 @@
         </div>
         <div class="field">
           <label for="status">Status</label>
-          <Dropdown
+          <PrimeDropdown
             id="status"
             v-model="editedOrder.status"
             :options="orderStatuses"
@@ -257,20 +257,20 @@
         </div>
       </div>
       <template #footer>
-        <Button
+        <PrimeButton
           label="Cancel"
           icon="pi pi-times"
           class="p-button-text"
           @click="showEditDialog = false"
         />
-        <Button
+        <PrimeButton
           label="Save"
           icon="pi pi-check"
           class="p-button-success"
           @click="saveOrder"
         />
       </template>
-    </Dialog>
+    </PrimeDialog>
 
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog></ConfirmDialog>

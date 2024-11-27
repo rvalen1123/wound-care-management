@@ -20,7 +20,7 @@
             <span v-if="user" class="text-gray-600">
               {{ user.name }}
             </span>
-            <Button
+            <PrimeButton
               icon="pi pi-sign-out"
               label="Logout"
               class="p-button-secondary p-button-text"

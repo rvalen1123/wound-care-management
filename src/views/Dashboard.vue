@@ -30,41 +30,41 @@
                  responsiveLayout="scroll"
                  :rowHover="true"
                  stripedRows>
-        <Column field="id" header="Order ID" class="text-lg">
+        <PrimeColumn field="id" header="Order ID" class="text-lg">
           <template #body="slotProps">
             <span class="text-lg font-medium">#{{ slotProps.data.id }}</span>
           </template>
-        </Column>
-        <Column field="customerName" header="Customer">
+        </PrimeColumn>
+        <PrimeColumn field="customerName" header="Customer">
           <template #body="slotProps">
             <span class="text-lg">{{ slotProps.data.customerName }}</span>
           </template>
-        </Column>
-        <Column field="product" header="Product">
+        </PrimeColumn>
+        <PrimeColumn field="product" header="Product">
           <template #body="slotProps">
             <span class="text-lg">{{ slotProps.data.product }}</span>
           </template>
-        </Column>
-        <Column field="amount" header="Amount">
+        </PrimeColumn>
+        <PrimeColumn field="amount" header="Amount">
           <template #body="slotProps">
             <span class="text-lg font-medium">${{ formatNumber(slotProps.data.amount, true) }}</span>
           </template>
-        </Column>
-        <Column field="status" header="Status">
+        </PrimeColumn>
+        <PrimeColumn field="status" header="Status">
           <template #body="slotProps">
-            <Tag :value="slotProps.data.status" 
-                 :severity="getStatusSeverity(slotProps.data.status)"
-                 class="text-lg">
-            </Tag>
+            <PrimeTag :value="slotProps.data.status" 
+                     :severity="getStatusSeverity(slotProps.data.status)"
+                     class="text-lg">
+            </PrimeTag>
           </template>
-        </Column>
-        <Column header="Actions">
+        </PrimeColumn>
+        <PrimeColumn header="Actions">
           <template #body="slotProps">
-            <Button icon="pi pi-eye" 
-                    class="p-button-text p-button-lg" 
-                    @click="viewOrder(slotProps.data)" />
+            <PrimeButton icon="pi pi-eye" 
+                        class="p-button-text p-button-lg" 
+                        @click="viewOrder(slotProps.data)" />
           </template>
-        </Column>
+        </PrimeColumn>
       </DataTable>
     </div>
   </div>
