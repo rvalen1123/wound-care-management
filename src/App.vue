@@ -1,51 +1,105 @@
 <template>
-  <div id="app" class="min-h-screen bg-gray-100 font-sans">
-    <nav class="bg-white shadow-md">
-      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center">
-          <img src="@/assets/logo.png" alt="Wound Care Management" class="h-10 mr-4">
-          <h1 class="text-xl font-bold text-green-700">Wound Care Management</h1>
-        </div>
-        <div class="space-x-4">
-          <router-link 
-            v-for="route in routes" 
-            :key="route.path" 
-            :to="route.path" 
-            class="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            {{ route.name }}
-          </router-link>
-        </div>
-      </div>
-    </nav>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Navigation Menu -->
+    <div v-if="isAuthenticated" class="bg-white shadow">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+          <!-- Left side navigation -->
+          <div class="flex">
+            <router-link 
+              to="/dashboard" 
+              class="flex items-center px-4 text-gray-700 hover:text-green-600"
+            >
+              <font-awesome-icon icon="hospital" class="mr-2" />
+              Wound Care Management
+            </router-link>
+          </div>
 
-    <main class="container mx-auto px-6 py-8">
+          <!-- Right side navigation -->
+          <div class="flex items-center space-x-4">
+            <span v-if="user" class="text-gray-600">
+              {{ user.name }}
+            </span>
+            <Button
+              icon="pi pi-sign-out"
+              label="Logout"
+              class="p-button-secondary p-button-text"
+              @click="handleLogout"
+            />
+          </div>
+        </div>
+
+        <!-- Sub navigation -->
+        <nav class="flex space-x-8 py-2">
+          <router-link 
+            to="/dashboard" 
+            class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+            active-class="text-green-600 border-b-2 border-green-600"
+          >
+            Dashboard
+          </router-link>
+          <router-link 
+            to="/graft-orders" 
+            class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+            active-class="text-green-600 border-b-2 border-green-600"
+          >
+            Graft Orders
+          </router-link>
+          <router-link 
+            to="/customers" 
+            class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+            active-class="text-green-600 border-b-2 border-green-600"
+          >
+            Customers
+          </router-link>
+          <router-link 
+            to="/financial-reports" 
+            class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+            active-class="text-green-600 border-b-2 border-green-600"
+          >
+            Financial Reports
+          </router-link>
+          <router-link 
+            to="/payments" 
+            class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+            active-class="text-green-600 border-b-2 border-green-600"
+          >
+            Payments
+          </router-link>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
       <router-view></router-view>
     </main>
-
-    <footer class="bg-white shadow-md mt-8">
-      <div class="container mx-auto px-6 py-4 text-center text-gray-600">
-        {{ currentYear }} Wound Care Management Platform. All rights reserved.
-      </div>
-    </footer>
   </div>
 </template>
 
 <script>
+import { useAuth } from '@/services/auth.service'
+import { useRouter } from 'vue-router'
+
 export default {
   name: 'App',
-  computed: {
-    currentYear() {
-      return new Date().getFullYear()
-    },
-    routes() {
-      return [
-        { path: '/', name: 'Dashboard' },
-        { path: '/graft-orders', name: 'Graft Orders' },
-        { path: '/customers', name: 'Customers' },
-        { path: '/financial-reports', name: 'Financial Reports' },
-        { path: '/payments', name: 'Payments' }
-      ]
+  setup() {
+    const router = useRouter()
+    const { isAuthenticated, user, logout } = useAuth()
+
+    const handleLogout = async () => {
+      try {
+        await logout()
+        router.push('/login')
+      } catch (error) {
+        console.error('Logout Error:', error)
+      }
+    }
+
+    return {
+      isAuthenticated,
+      user,
+      handleLogout
     }
   }
 }

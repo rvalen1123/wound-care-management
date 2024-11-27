@@ -6,7 +6,9 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <div v-for="stat in statsList" :key="stat.title" class="bg-white shadow-md rounded-lg p-6">
         <h3 class="text-lg font-semibold mb-2">{{ stat.title }}</h3>
-        <p :class="['text-3xl font-bold', stat.colorClass]">{{ stat.prefix }}{{ formatNumber(stat.value) }}</p>
+        <p :class="['text-3xl font-bold', stat.colorClass]">
+          {{ stat.prefix }}{{ formatNumber(stat.value, stat.isMonetary) }}
+        </p>
         <p class="text-sm text-gray-500 mt-2">{{ stat.subtitle }}</p>
       </div>
     </div>
@@ -45,7 +47,7 @@
         </Column>
         <Column field="amount" header="Amount">
           <template #body="slotProps">
-            <span class="text-lg font-medium">${{ formatNumber(slotProps.data.amount) }}</span>
+            <span class="text-lg font-medium">${{ formatNumber(slotProps.data.amount, true) }}</span>
           </template>
         </Column>
         <Column field="status" header="Status">
@@ -79,28 +81,32 @@ export default {
           value: 156,
           prefix: '',
           colorClass: 'text-green-600',
-          subtitle: 'Last 30 days'
+          subtitle: 'Last 30 days',
+          isMonetary: false
         },
         {
           title: 'Active Orders',
           value: 23,
           prefix: '',
           colorClass: 'text-blue-600',
-          subtitle: 'In progress'
+          subtitle: 'In progress',
+          isMonetary: false
         },
         {
           title: 'Total Revenue',
           value: 125000,
           prefix: '$',
           colorClass: 'text-green-600',
-          subtitle: 'This month'
+          subtitle: 'This month',
+          isMonetary: true
         },
         {
           title: 'Pending Payments',
           value: 45000,
           prefix: '$',
           colorClass: 'text-yellow-600',
-          subtitle: '15 orders'
+          subtitle: '15 orders',
+          isMonetary: true
         }
       ],
       recentOrders: [
@@ -143,10 +149,10 @@ export default {
     }
   },
   methods: {
-    formatNumber(value) {
+    formatNumber(value, isMonetary = true) {
       return value.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: isMonetary ? 2 : 0,
+        maximumFractionDigits: isMonetary ? 2 : 0
       })
     },
     getStatusSeverity(status) {
