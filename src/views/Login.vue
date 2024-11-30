@@ -3,7 +3,7 @@
     <div class="login-card bg-white p-8 rounded-lg shadow-md w-full max-w-md">
       <div class="flex justify-center mb-8">
         <img 
-          src="@/assets/msc-logo.png" 
+          src="/msc-logo.png" 
           alt="MSC Wound Care Logo" 
           class="h-16 w-auto"
         />
@@ -11,24 +11,24 @@
       
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <label class="block text-sm font-medium text-[#003087]">Email</label>
           <input
             v-model="email"
             type="email"
             required
             autocomplete="username"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <label class="block text-sm font-medium text-[#003087]">Password</label>
           <input
             v-model="password"
             type="password"
             required
             autocomplete="current-password"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
           />
         </div>
 
@@ -36,7 +36,7 @@
           <button
             type="submit"
             :disabled="loading"
-            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#003087] hover:bg-[#002266] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003087] disabled:opacity-50"
           >
             {{ loading ? 'Logging in...' : 'Login' }}
           </button>
@@ -44,7 +44,7 @@
           <button
             type="button"
             @click="handleRegister"
-            class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="flex-1 py-2 px-4 border border-[#E31837] rounded-md shadow-sm text-sm font-medium text-[#E31837] bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E31837]"
           >
             Register
           </button>
@@ -52,7 +52,7 @@
 
         <div 
           v-if="error"
-          class="p-4 bg-red-50 text-red-600 rounded text-sm"
+          class="p-4 bg-red-50 text-[#E31837] rounded text-sm"
         >
           {{ error }}
         </div>
@@ -108,7 +108,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 1rem;
 }
 
