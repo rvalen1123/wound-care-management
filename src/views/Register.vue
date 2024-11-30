@@ -1,14 +1,14 @@
-&lt;template&gt;
-  &lt;div class="login-container"&gt;
-    &lt;div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md"&gt;
-      &lt;h1 class="text-2xl font-bold text-center text-gray-800 mb-8"&gt;
+<template>
+  <div class="login-container">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <h1 class="text-2xl font-bold text-center text-gray-800 mb-8">
         Create Account
-      &lt;/h1&gt;
+      </h1>
       
-      &lt;form @submit.prevent="handleRegister" class="space-y-4"&gt;
-        &lt;div&gt;
-          &lt;label class="block text-sm font-medium text-gray-700"&gt;Name&lt;/label&gt;
-          &lt;input
+      <form @submit.prevent="handleRegister" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <input
             v-model="name"
             type="text"
             required
@@ -16,43 +16,43 @@
             @blur="validateName"
             :class="{'border-red-500': nameError}"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          /&gt;
-          &lt;p v-if="nameError" class="mt-1 text-sm text-red-600"&gt;{{ nameError }}&lt;/p&gt;
-        &lt;/div&gt;
+          />
+          <p v-if="nameError" class="mt-1 text-sm text-red-600">{{ nameError }}</p>
+        </div>
 
-        &lt;div&gt;
-          &lt;label class="block text-sm font-medium text-gray-700"&gt;Email&lt;/label&gt;
-          &lt;input
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input
             v-model="email"
             type="email"
             required
             @blur="validateEmail"
             :class="{'border-red-500': emailError}"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          /&gt;
-          &lt;p v-if="emailError" class="mt-1 text-sm text-red-600"&gt;{{ emailError }}&lt;/p&gt;
-        &lt;/div&gt;
+          />
+          <p v-if="emailError" class="mt-1 text-sm text-red-600">{{ emailError }}</p>
+        </div>
 
-        &lt;div&gt;
-          &lt;label class="block text-sm font-medium text-gray-700"&gt;Role&lt;/label&gt;
-          &lt;select
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Role</label>
+          <select
             v-model="role"
             required
             @blur="validateRole"
             :class="{'border-red-500': roleError}"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          &gt;
-            &lt;option value=""&gt;Select a role&lt;/option&gt;
-            &lt;option value="administration"&gt;Administration&lt;/option&gt;
-            &lt;option value="sales_rep"&gt;Sales Rep&lt;/option&gt;
-            &lt;option value="doctor"&gt;Doctor&lt;/option&gt;
-          &lt;/select&gt;
-          &lt;p v-if="roleError" class="mt-1 text-sm text-red-600"&gt;{{ roleError }}&lt;/p&gt;
-        &lt;/div&gt;
+          >
+            <option value="">Select a role</option>
+            <option value="administration">Administration</option>
+            <option value="sales_rep">Sales Rep</option>
+            <option value="doctor">Doctor</option>
+          </select>
+          <p v-if="roleError" class="mt-1 text-sm text-red-600">{{ roleError }}</p>
+        </div>
 
-        &lt;div&gt;
-          &lt;label class="block text-sm font-medium text-gray-700"&gt;Password&lt;/label&gt;
-          &lt;input
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <input
             v-model="password"
             type="password"
             required
@@ -60,46 +60,46 @@
             @blur="validatePassword"
             :class="{'border-red-500': passwordError}"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          /&gt;
-          &lt;p v-if="passwordError" class="mt-1 text-sm text-red-600"&gt;{{ passwordError }}&lt;/p&gt;
-        &lt;/div&gt;
+          />
+          <p v-if="passwordError" class="mt-1 text-sm text-red-600">{{ passwordError }}</p>
+        </div>
 
-        &lt;div&gt;
-          &lt;label class="block text-sm font-medium text-gray-700"&gt;Confirm Password&lt;/label&gt;
-          &lt;input
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
+          <input
             v-model="confirmPassword"
             type="password"
             required
             @blur="validateConfirmPassword"
             :class="{'border-red-500': confirmPasswordError}"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          /&gt;
-          &lt;p v-if="confirmPasswordError" class="mt-1 text-sm text-red-600"&gt;{{ confirmPasswordError }}&lt;/p&gt;
-        &lt;/div&gt;
+          />
+          <p v-if="confirmPasswordError" class="mt-1 text-sm text-red-600">{{ confirmPasswordError }}</p>
+        </div>
 
-        &lt;button
+        <button
           type="submit"
           :disabled="loading || hasErrors"
           class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-        &gt;
+        >
           {{ loading ? 'Creating Account...' : 'Create Account' }}
-        &lt;/button&gt;
+        </button>
 
-        &lt;div v-if="error" class="p-4 bg-red-50 text-red-600 rounded text-sm"&gt;
+        <div v-if="error" class="p-4 bg-red-50 text-red-600 rounded text-sm">
           {{ error }}
-        &lt;/div&gt;
+        </div>
 
-        &lt;div class="text-center mt-4"&gt;
-          &lt;router-link to="/login" class="text-sm text-indigo-600 hover:text-indigo-500"&gt;
+        <div class="text-center mt-4">
+          <router-link to="/login" class="text-sm text-indigo-600 hover:text-indigo-500">
             Already have an account? Sign in
-          &lt;/router-link&gt;
-        &lt;/div&gt;
-      &lt;/form&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/template&gt;
+          </router-link>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
 
-&lt;script setup&gt;
+<script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -217,9 +217,9 @@ async function handleRegister() {
     loading.value = false
   }
 }
-&lt;/script&gt;
+</script>
 
-&lt;style scoped&gt;
+<style scoped>
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -228,4 +228,4 @@ async function handleRegister() {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 1rem;
 }
-&lt;/style&gt;
+</style>
