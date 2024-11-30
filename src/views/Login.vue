@@ -20,14 +20,25 @@
           class="mb-4"
         />
 
-        <vx-button
-          type="submit"
-          variant="primary"
-          block
-          :loading="loading"
-        >
-          Sign In
-        </vx-button>
+        <div class="flex gap-3 mb-4">
+          <vx-button
+            type="submit"
+            variant="primary"
+            block
+            :loading="loading"
+          >
+            Login
+          </vx-button>
+          
+          <vx-button
+            type="button"
+            variant="secondary"
+            block
+            @click="handleRegister"
+          >
+            Register
+          </vx-button>
+        </div>
 
         <vx-alert
           v-if="error"
@@ -53,6 +64,10 @@ const email = ref('');
 const password = ref('');
 const error = ref('');
 const loading = ref(false);
+
+function handleRegister() {
+  router.push('/register');
+}
 
 async function handleLogin() {
   try {
