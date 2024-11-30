@@ -5,93 +5,120 @@
         Wound Care Management Platform
       </h1>
       
-      <div class="space-y-4">
-        <p class="text-center text-gray-600">
-          Please sign in with your Google account to access the platform
-        </p>
-        
-        <div id="googleButton"></div>
-
-        <div class="flex justify-center">
-          <PrimeButton
-            v-if="!isAuthenticated"
-            class="p-button-primary"
-            label="Sign in with Google"
-            icon="pi pi-google"
-            @click="handleAuth"
+      <form @submit.prevent="handleEmailLogin" class="space-y-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input
+            v-model="email"
+            type="email"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
 
-        <PrimeButton
-          v-if="isAuthenticated"
-          class="w-full p-button-secondary"
-          label="Sign Out"
-          icon="pi pi-sign-out"
-          @click="handleLogout"
-        />
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <input
+            v-model="password"
+            type="password"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        <button
+          type="submit"
+          :disabled="loading"
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        >
+          {{ loading ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+
+      <div class="relative mb-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
       </div>
 
-      <div v-if="error" class="mt-4 p-4 bg-red-50 text-red-600 rounded">
+      <div class="space-y-4">
+        <button
+          @click="handleGoogleAuth"
+          type="button"
+          class="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <img src="@/assets/google-icon.svg" alt="Google" class="w-5 h-5" />
+          Sign in with Google
+        </button>
+
+        <div class="text-center">
+          <router-link to="/register" class="text-sm text-indigo-600 hover:text-indigo-500">
+            Don't have an account? Sign up
+          </router-link>
+        </div>
+      </div>
+
+      <div v-if="error" class="mt-4 p-4 bg-red-50 text-red-600 rounded text-sm">
         {{ error }}
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import { ref, onMounted, watch } from 'vue'
+<script setup>
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/auth'
 
-export default {
-  name: 'LoginPage',
-  setup() {
-    const router = useRouter()
-    const error = ref('')
-    const { isAuthenticated, login, logout, initGoogleAuth } = useAuth()
+const router = useRouter()
+const authStore = useAuthStore()
 
-    const handleAuth = async () => {
-      try {
-        error.value = ''
-        await login()
-      } catch (err) {
-        error.value = 'Authentication failed. Please try again.'
-        console.error('Auth Error:', err)
-      }
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const loading = ref(false)
+
+onMounted(async () => {
+  // Check profiles table structure
+  await authStore.checkProfilesTable()
+})
+
+const handleEmailLogin = async () => {
+  try {
+    loading.value = true
+    error.value = ''
+
+    const { error: loginError } = await authStore.login(email.value, password.value)
+
+    if (loginError) {
+      throw loginError
     }
 
-    const handleLogout = async () => {
-      try {
-        error.value = ''
-        await logout()
-      } catch (err) {
-        error.value = 'Logout failed. Please try again.'
-        console.error('Logout Error:', err)
-      }
-    }
-
-    // Watch for authentication state changes
-    watch(isAuthenticated, (newValue) => {
-      if (newValue) {
-        router.push('/dashboard')
-      }
-    })
-
-    onMounted(async () => {
-      try {
-        await initGoogleAuth()
-      } catch (err) {
-        error.value = 'Failed to initialize Google authentication.'
-        console.error('Init Error:', err)
-      }
-    })
-
-    return {
-      isAuthenticated,
-      error,
-      handleAuth,
-      handleLogout
-    }
+    router.push('/dashboard')
+  } catch (err) {
+    error.value = err.message || 'Failed to sign in'
+  } finally {
+    loading.value = false
   }
 }
+
+const handleGoogleAuth = async () => {
+  try {
+    error.value = ''
+    await authStore.loginWithGoogle()
+  } catch (err) {
+    error.value = 'Authentication failed. Please try again.'
+    console.error('Auth Error:', err)
+  }
+}
+
+// Watch for authentication state changes
+watch(() => authStore.isAuthenticated, (newValue) => {
+  if (newValue) {
+    router.push('/dashboard')
+  }
+})
 </script>
