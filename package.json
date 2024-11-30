@@ -10,16 +10,14 @@
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
-    "@fortawesome/vue-fortawesome": "^3.0.0",
+    "@fortawesome/vue-fontawesome": "^3.0.0",
     "axios": "^1.6.7",
     "chart.js": "^4.4.1",
     "core-js": "^3.8.3",
-    "primeros": "^7.0.0",
-    "prevue": "^3.53.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^3.48.1",
     "vue": "^3.2.13",
-    "vue-charts": "^5.3.0",
-    "vue-router": "^4.5.0",
-    "vue3-google-oauth2": "^1.0.7",
+    "vue-router": "^4.2.5",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
