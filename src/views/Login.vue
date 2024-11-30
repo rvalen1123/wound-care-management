@@ -1,7 +1,13 @@
 <template>
   <div class="login-container">
     <div class="login-card bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Medical Billing System</h2>
+      <div class="flex justify-center mb-8">
+        <img 
+          src="@/assets/msc-logo.png" 
+          alt="MSC Wound Care Logo" 
+          class="h-16 w-auto"
+        />
+      </div>
       
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
@@ -10,6 +16,7 @@
             v-model="email"
             type="email"
             required
+            autocomplete="username"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
@@ -20,6 +27,7 @@
             v-model="password"
             type="password"
             required
+            autocomplete="current-password"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
