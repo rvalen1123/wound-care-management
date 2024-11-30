@@ -86,7 +86,7 @@
         :rows="10"
         :rowsPerPageOptions="[10, 20, 50]"
         responsiveLayout="scroll"
-        class="p-datatable-sm"
+        class="p-DataTable-sm"
         v-model:filters="filters"
         filterDisplay="menu"
         :loading="loading"
@@ -300,17 +300,17 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.p-datatable ::v-deep(.p-datatable-header) {
+.p-DataTable ::v-deep(.p-DataTable-header) {
   background-color: #f8f9fa;
 }
 
-.p-datatable ::v-deep(.p-datatable-thead > tr > th) {
+.p-DataTable ::v-deep(.p-DataTable-thead > tr > th) {
   background-color: #f8f9fa;
   color: #495057;
   font-weight: 600;
 }
 
-.p-datatable ::v-deep(.p-datatable-tbody > tr:nth-child(even)) {
+.p-DataTable ::v-deep(.p-DataTable-tbody > tr:nth-child(even)) {
   background-color: #f8f9fa;
 }
 
