@@ -93,52 +93,52 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const email = ref('')
-const password = ref('')
-const error = ref('')
-const loading = ref(false)
+const email = ref('');
+const password = ref('');
+const error = ref('');
+const loading = ref(false);
 
 const isFormValid = computed(() => {
-  return email.value.trim() && password.value.trim()
-})
+  return email.value.trim() && password.value.trim();
+});
 
 function handleRegister() {
-  router.push('/register')
+  router.push('/register');
 }
 
 async function handleLogin() {
   try {
     if (!isFormValid.value) {
-      error.value = 'Please enter both email and password'
-      return
+      error.value = 'Please enter both email and password';
+      return;
     }
 
-    loading.value = true
-    error.value = ''
+    loading.value = true;
+    error.value = '';
 
     const { error: loginError } = await authStore.login({
       email: email.value,
       password: password.value
-    })
+    });
 
     if (loginError) {
-      throw loginError
+      throw loginError;
     }
 
-    router.push('/dashboard')
-  } catch (err) {
-    error.value = err.message || 'Failed to sign in'
-    console.error('Login error:', err)
+    router.push('/dashboard');
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : 'Failed to sign in';
+    console.error('Login error:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

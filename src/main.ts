@@ -2,9 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { 
   createRouter, 
-  createWebHistory,
-  type RouteLocationNormalized,
-  type NavigationGuardNext
+  createWebHistory
 } from 'vue-router'
 import { createClient } from '@supabase/supabase-js'
 import App from './App.vue'
@@ -23,8 +21,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Define route types
+type RouteMeta = {
+  requiresAuth?: boolean;
+}
+
+type AppRoute = {
+  path: string;
+  name: string;
+  component: () => Promise<any>;
+  meta?: RouteMeta;
+}
+
 // Define routes
-const routes = [
+const routes: AppRoute[] = [
   {
     path: '/',
     name: 'dashboard',
@@ -88,13 +98,9 @@ const router = createRouter({
 })
 
 // Navigation guard for auth
-router.beforeEach(async (
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
+router.beforeEach(async (to: any, from: any, next: (path?: string) => void) => {
   const { data: { session } } = await supabase.auth.getSession()
-  const requiresAuth = to.matched.some(record => record.meta?.requiresAuth)
+  const requiresAuth = to.matched.some((route: { meta?: RouteMeta }) => route.meta?.requiresAuth)
 
   if (requiresAuth && !session) {
     next('/login')

@@ -2,7 +2,9 @@
 module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx}"
+    "./src/**/*.{vue,js,ts,jsx,tsx}",
+    "./node_modules/flowbite/**/*.js",
+    "./node_modules/flowbite-vue/**/*.{js,jsx,ts,tsx}"
   ],
   theme: {
     extend: {
@@ -68,7 +70,7 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/forms'), // Tailwind plugin for styling forms
-    require('@tailwindcss/typography') // Typography plugin for rich text
+    require('@tailwindcss/typography'), // Typography plugin for rich text
+    require('flowbite/plugin') // Flowbite plugin for components
   ]
 };
-

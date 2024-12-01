@@ -23,15 +23,15 @@ export function setupPrimeVue(app: ReturnType<typeof createApp>): void {
   app.use(ToastService);
   app.use(ConfirmationService);
 
-  // Register PrimeVue components globally
-  app.component('Button', Button);
-  app.component('Calendar', Calendar);
-  app.component('Card', Card);
-  app.component('Dropdown', Dropdown);
-  app.component('InputNumber', InputNumber);
-  app.component('Dialog', Dialog);
-  app.component('Toast', Toast);
-  app.component('ConfirmDialog', ConfirmDialog);
+  // Register PrimeVue components globally with 'Prime' prefix
+  app.component('PrimeButton', Button);
+  app.component('PrimeCalendar', Calendar);
+  app.component('PrimeCard', Card);
+  app.component('PrimeDropdown', Dropdown);
+  app.component('PrimeInputNumber', InputNumber);
+  app.component('PrimeDialog', Dialog);
+  app.component('PrimeToast', Toast);
+  app.component('PrimeConfirmDialog', ConfirmDialog);
 
   // Register directives
   app.directive('tooltip', Tooltip);
