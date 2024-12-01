@@ -5,7 +5,7 @@
     <!-- Customer Creation Form -->
     <div class="bg-white shadow-md rounded-lg p-6 mb-6">
       <h2 class="text-xl font-semibold mb-4">Add New Customer</h2>
-      <form @submit.prevent="createCustomer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form @submit.prevent="handleCreateCustomer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block mb-2">Name</label>
           <input 
@@ -46,8 +46,12 @@
         </div>
         
         <div class="col-span-full">
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            Add Customer
+          <button 
+            type="submit" 
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            :disabled="customerStore.loading"
+          >
+            {{ customerStore.loading ? 'Adding...' : 'Add Customer' }}
           </button>
         </div>
       </form>
@@ -69,7 +73,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="customer in customers" :key="customer.id" class="border-t">
+            <tr v-for="customer in customerStore.customers" :key="customer.id" class="border-t">
               <td class="p-4">{{ customer.id }}</td>
               <td class="p-4">{{ customer.name }}</td>
               <td class="p-4">{{ customer.email }}</td>
@@ -77,16 +81,17 @@
               <td class="p-4">{{ customer.type }}</td>
               <td class="p-4">
                 <button 
-                  @click="editCustomer(customer)"
+                  @click="handleEditCustomer(customer)"
                   class="text-blue-600 hover:text-blue-800 mr-2"
                 >
                   Edit
                 </button>
                 <button 
-                  @click="deleteCustomer(customer.id)"
+                  @click="handleDeleteCustomer(customer.id)"
                   class="text-red-600 hover:text-red-800"
+                  :disabled="customerStore.loading"
                 >
-                  Delete
+                  {{ customerStore.loading ? 'Deleting...' : 'Delete' }}
                 </button>
               </td>
             </tr>
@@ -97,68 +102,60 @@
   </div>
 </template>
 
-<script>
-import { mapState, mapActions } from 'vuex'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useCustomerStore } from '@/stores/customerStore';
 
-export default {
-  name: 'CustomerManagement',
-  data() {
-    return {
-      newCustomer: {
-        name: '',
-        email: '',
-        phone: '',
-        type: 'hospital'
-      }
-    }
-  },
-  computed: {
-    ...mapState({
-      customers: state => state.customers
-    })
-  },
-  methods: {
-    ...mapActions(['createCustomer', 'updateCustomer', 'deleteCustomer']),
+const customerStore = useCustomerStore();
+
+interface NewCustomer {
+  name: string;
+  email: string;
+  phone: string;
+  type: 'hospital' | 'clinic' | 'doctor';
+}
+
+const newCustomer = ref<NewCustomer>({
+  name: '',
+  email: '',
+  phone: '',
+  type: 'hospital'
+});
+
+async function handleCreateCustomer() {
+  try {
+    await customerStore.createCustomer(newCustomer.value);
     
-    async createCustomer() {
-      try {
-        await this.$store.dispatch('createCustomer', {
-          ...this.newCustomer,
-          id: Date.now() // Temporary ID generation
-        })
-        
-        // Reset form
-        this.newCustomer = {
-          name: '',
-          email: '',
-          phone: '',
-          type: 'hospital'
-        }
-      } catch (error) {
-        console.error('Error creating customer:', error)
-      }
-    },
-    
-    editCustomer(customer) {
-      // Implementation for editing customer
-      console.log('Edit customer:', customer)
-    },
-    
-    async deleteCustomer(customerId) {
-      if (confirm('Are you sure you want to delete this customer?')) {
-        try {
-          await this.$store.dispatch('deleteCustomer', customerId)
-        } catch (error) {
-          console.error('Error deleting customer:', error)
-        }
-      }
-    }
-  },
-  created() {
-    // Fetch customers on component creation
-    this.$store.dispatch('fetchCustomers')
+    // Reset form
+    newCustomer.value = {
+      name: '',
+      email: '',
+      phone: '',
+      type: 'hospital'
+    };
+  } catch (error) {
+    console.error('Error creating customer:', error);
   }
 }
+
+function handleEditCustomer(customer: any) {
+  // Implementation for editing customer
+  console.log('Edit customer:', customer);
+}
+
+async function handleDeleteCustomer(customerId: string) {
+  if (confirm('Are you sure you want to delete this customer?')) {
+    try {
+      await customerStore.deleteCustomer(customerId);
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    }
+  }
+}
+
+onMounted(() => {
+  customerStore.fetchCustomers();
+});
 </script>
 
 <style scoped>

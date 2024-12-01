@@ -78,31 +78,42 @@
 </template>
 
 <script>
-import { useAuth } from '@/services/auth.service'
-import { useRouter } from 'vue-router'
+import { authService } from '@/services/auth.service';
+import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
 
 export default {
   name: 'App',
   setup() {
-    const router = useRouter()
-    const { isAuthenticated, user, logout } = useAuth()
+    const router = useRouter();
+    const isAuthenticated = ref(false);
+    const user = ref(null);
 
     const handleLogout = async () => {
       try {
-        await logout()
-        router.push('/login')
+        await authService.signOut();
+        router.push('/login');
       } catch (error) {
-        console.error('Logout Error:', error)
+        console.error('Logout Error:', error);
       }
-    }
+    };
+
+    onMounted(async () => {
+      try {
+        user.value = await authService.getCurrentUser();
+        isAuthenticated.value = !!user.value;
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    });
 
     return {
       isAuthenticated,
       user,
       handleLogout
-    }
+    };
   }
-}
+};
 </script>
 
 <style>

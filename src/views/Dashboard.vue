@@ -98,13 +98,13 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="order in filteredOrders" :key="order.id">
             <td class="px-6 py-4 whitespace-nowrap">
-              {{ order.doctor?.name }}
+              {{ order.doctor?.name || 'Unknown Doctor' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              {{ order.product?.name }}
+              {{ order.product?.name || 'Unknown Product' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              {{ new Date(order.date_of_service).toLocaleDateString() }}
+              {{ formatDate(order.date_of_service || '') }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span :class="getStatusClass(order.status)">
@@ -160,23 +160,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useSupabase } from '@/composables/useSupabase'
-import type { Order, Doctor, Product } from '@/types/models'
-import { orderService } from '@/services/orderService'
-import AddOrderModal from '@/components/orders/AddOrderModal.vue'
-import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
-import { formatCurrency } from '@/utils/formatters'
-
-const supabase = useSupabase()
+import { ref, computed, onMounted } from 'vue';
+import { supabase } from '@/lib/supabaseClient';
+import type { Order, Doctor, Product } from '@/types/models';
+import { orderService } from '@/services/orderService';
+import AddOrderModal from '@/components/orders/AddOrderModal.vue';
+import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 
 // State with proper typing
-const orders = ref<Order[]>([])
-const doctors = ref<Doctor[]>([])
-const products = ref<Product[]>([])
-const showAddOrderModal = ref(false)
-const selectedOrder = ref<Order | null>(null)
-const isAdmin = ref(false)
+const orders = ref<Order[]>([]);
+const doctors = ref<Doctor[]>([]);
+const products = ref<Product[]>([]);
+const showAddOrderModal = ref(false);
+const selectedOrder = ref<Order | null>(null);
+const isAdmin = ref(false);
 
 const filters = ref({
   doctorId: '',
@@ -184,69 +182,65 @@ const filters = ref({
   status: '',
   dateFrom: '',
   dateTo: ''
-})
+});
 
 // Computed with proper typing
 const filteredOrders = computed(() => {
   return orders.value.filter((order: Order) => {
-    if (filters.value.doctorId && order.doctor.id !== filters.value.doctorId) return false
-    if (filters.value.productId && order.product.id !== filters.value.productId) return false
-    if (filters.value.status && order.status !== filters.value.status) return false
-    if (filters.value.dateFrom && new Date(order.date_of_service) < new Date(filters.value.dateFrom)) return false
-    if (filters.value.dateTo && new Date(order.date_of_service) > new Date(filters.value.dateTo)) return false
-    return true
-  })
-})
+    if (filters.value.doctorId && order.doctor?.id !== filters.value.doctorId) return false;
+    if (filters.value.productId && order.product?.id !== filters.value.productId) return false;
+    if (filters.value.status && order.status !== filters.value.status) return false;
+    if (filters.value.dateFrom && order.date_of_service && new Date(order.date_of_service) < new Date(filters.value.dateFrom)) return false;
+    if (filters.value.dateTo && order.date_of_service && new Date(order.date_of_service) > new Date(filters.value.dateTo)) return false;
+    return true;
+  });
+});
 
 // Methods
 const loadOrders = async () => {
   try {
-    orders.value = await orderService.getOrders()
+    orders.value = await orderService.getOrders();
   } catch (error) {
-    console.error('Error loading orders:', error)
+    console.error('Error loading orders:', error);
   }
-}
+};
 
 const loadDoctors = async () => {
   const { data, error } = await supabase
     .from('doctors')
-    .select('*')
+    .select('*');
   
   if (error) {
-    console.error('Error loading doctors:', error)
-    return
+    console.error('Error loading doctors:', error);
+    return;
   }
-  doctors.value = data || []
-}
+  doctors.value = data || [];
+};
 
 const loadProducts = async () => {
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select('*');
   
   if (error) {
-    console.error('Error loading products:', error)
-    return
+    console.error('Error loading products:', error);
+    return;
   }
-  products.value = data || []
-}
+  products.value = data || [];
+};
 
 const checkUserRole = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
   const { data } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', user.id)
-    .single()
+    .single();
 
-  isAdmin.value = data?.role === 'admin'
-}
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString()
-}
+  isAdmin.value = data?.role === 'admin';
+};
 
 const getStatusClass = (status: string): string => {
   const classes = {
@@ -255,20 +249,20 @@ const getStatusClass = (status: string): string => {
     paid: 'bg-blue-100 text-blue-800',
     partial: 'bg-orange-100 text-orange-800',
     outstanding: 'bg-red-100 text-red-800'
-  }
-  return classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'
-}
+  } as const;
+  return classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800';
+};
 
 const viewOrder = (order: Order) => {
-  selectedOrder.value = order
-}
+  selectedOrder.value = order;
+};
 
 const editOrder = (order: Order) => {
-  selectedOrder.value = { ...order, isEditing: true }
-}
+  selectedOrder.value = { ...order, isEditing: true };
+};
 
 const approveOrder = async (order: Order) => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
     .from('orders')
     .update({
@@ -276,25 +270,25 @@ const approveOrder = async (order: Order) => {
       approved_by: user?.id,
       approved_at: new Date().toISOString()
     })
-    .eq('id', order.id)
+    .eq('id', order.id);
 
   if (error) {
-    console.error('Error approving order:', error)
-    return
+    console.error('Error approving order:', error);
+    return;
   }
 
-  await loadOrders()
-}
+  await loadOrders();
+};
 
 const handleOrderAdded = async () => {
-  showAddOrderModal.value = false
-  await loadOrders()
-}
+  showAddOrderModal.value = false;
+  await loadOrders();
+};
 
 const handleOrderUpdated = async () => {
-  selectedOrder.value = null
-  await loadOrders()
-}
+  selectedOrder.value = null;
+  await loadOrders();
+};
 
 // Lifecycle
 onMounted(async () => {
@@ -304,11 +298,11 @@ onMounted(async () => {
       loadDoctors(),
       loadProducts(),
       checkUserRole()
-    ])
+    ]);
   } catch (error) {
-    console.error('Failed to fetch dashboard data:', error)
+    console.error('Failed to fetch dashboard data:', error);
   }
-})
+});
 </script>
 
 <style scoped>
