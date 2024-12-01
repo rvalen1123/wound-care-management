@@ -110,8 +110,10 @@
                   </template>
                 </Column>
                 <Column>
-                  <template #body>
-                    <Button label="View transaction" link />
+                  <template #body="{ data }">
+                    <tr @click="viewTransaction(data)" class="cursor-pointer">
+                      <Button label="View transaction" link />
+                    </tr>
                   </template>
                 </Column>
               </DataTable>
@@ -132,7 +134,7 @@
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div v-for="client in clients" :key="client.id" class="bg-white p-6 rounded-lg shadow-sm">
+          <div v-for="client in clients" :key="client.id" class="bg-white p-6 rounded-lg shadow-sm cursor-pointer" @click="viewClient(client)">
             <div class="flex items-center gap-4">
               <img class="h-12 w-12 rounded-lg bg-gray-100" :src="client.imageUrl" :alt="client.name" />
               <div>
@@ -154,7 +156,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Menu, MenuButton, MenuItem } from '@headlessui/vue'
 import { BellIcon } from '@heroicons/vue/24/outline'
