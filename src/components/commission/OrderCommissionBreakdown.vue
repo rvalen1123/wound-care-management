@@ -61,10 +61,10 @@
             :key="structure.id" 
             :value="structure.id"
           >
-            {{ structure.masterRepName }} 
-            {{ structure.subRepName ? ` / ${structure.subRepName}` : '' }}
-            {{ structure.subSubRepName ? ` / ${structure.subSubRepName}` : '' }}
-            ({{ structure.masterRepRate }}% / {{ structure.subRepRate || 0 }}% / {{ structure.subSubRepRate || 0 }}%)
+            {{ structure.master_rep?.name }} 
+            {{ structure.sub_rep?.name ? ` / ${structure.sub_rep.name}` : '' }}
+            {{ structure.sub_sub_rep?.name ? ` / ${structure.sub_sub_rep.name}` : '' }}
+            ({{ structure.master_rep_rate }}% / {{ structure.sub_rep_rate || 0 }}% / {{ structure.sub_sub_rep_rate || 0 }}%)
           </option>
         </select>
       </div>
@@ -77,33 +77,30 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useSupabase } from '@/composables/useSupabase'
 
 interface CommissionStructure {
-  id: string
-  master_rep_id: string
-  sub_rep_id?: string
-  sub_sub_rep_id?: string
-  master_rep_rate: number
-  sub_rep_rate?: number
-  sub_sub_rep_rate?: number
-  master_rep?: { name: string }
-  sub_rep?: { name: string }
-  sub_sub_rep?: { name: string }
-  masterRepName?: string
-  subRepName?: string
-  subSubRepName?: string
+  id: string;
+  master_rep_id: string;
+  sub_rep_id?: string;
+  sub_sub_rep_id?: string;
+  master_rep_rate: number;
+  sub_rep_rate?: number;
+  sub_sub_rep_rate?: number;
+  master_rep?: { name: string };
+  sub_rep?: { name: string };
+  sub_sub_rep?: { name: string };
 }
 
 const supabase = useSupabase()
 
 const props = defineProps<{
-  orderId: string
-  totalCommission: number
-  masterRepId?: string
-  subRepId?: string
-  subSubRepId?: string
-  masterRepRate?: number
-  subRepRate?: number
-  subSubRepRate?: number
-  isAdmin: boolean
+  orderId: string;
+  totalCommission: number;
+  masterRepId?: string;
+  subRepId?: string;
+  subSubRepId?: string;
+  masterRepRate?: number;
+  subRepRate?: number;
+  subSubRepRate?: number;
+  isAdmin: boolean;
 }>()
 
 const emit = defineEmits<{
@@ -225,13 +222,11 @@ watch(() => props.masterRepId, async (newVal) => {
   }
 })
 
-// Lifecycle
+// Initial load
 onMounted(async () => {
-  if (props.masterRepId) {
-    await Promise.all([
-      loadRepNames(),
-      loadAvailableStructures()
-    ])
+  await loadRepNames()
+  if (props.isAdmin) {
+    await loadAvailableStructures()
   }
 })
 </script> 

@@ -218,7 +218,14 @@ export function useCommission(): UseCommissionReturn {
           sub_rep_rate: structure.subRepRate ?? null,
           sub_sub_rep_rate: structure.subSubRepRate ?? null,
           updated_by: (await supabase.auth.getUser()).data.user?.id,
-          updated_at: new Date().toISOString()
+{
+  "scripts": {
+    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "build": "vue-tsc && vite build",
+    "test": "vitest run"
+  }
+}          updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
         .select()

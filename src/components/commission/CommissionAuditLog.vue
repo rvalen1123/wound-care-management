@@ -26,7 +26,7 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="entry in auditLog" :key="entry.id">
+            <tr v-for="entry in auditLogs" :key="entry.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ formatDate(entry.changed_at) }}
               </td>
@@ -55,7 +55,7 @@
         </table>
 
         <!-- Empty State -->
-        <div v-if="auditLog.length === 0" class="text-center py-8 text-gray-500">
+        <div v-if="auditLogs.length === 0" class="text-center py-8 text-gray-500">
           No changes have been made to this commission structure.
         </div>
       </div>
@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useCommission } from '@/composables/useCommission'
+import type { CommissionAuditLog } from '@/types/commission'
 
 const props = defineProps<{
   structureId: string
@@ -73,12 +74,12 @@ const props = defineProps<{
 
 // State
 const { loading, error, getCommissionAuditLog } = useCommission()
-const auditLog = ref([])
+const auditLogs = ref<CommissionAuditLog[]>([])
 
 // Methods
 const loadAuditLog = async () => {
   const data = await getCommissionAuditLog(props.structureId)
-  auditLog.value = data
+  auditLogs.value = data
 }
 
 const formatDate = (dateString: string) => {
@@ -104,4 +105,4 @@ onMounted(() => {
     loadAuditLog()
   }
 })
-</script> 
+</script>
