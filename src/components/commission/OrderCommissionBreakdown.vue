@@ -76,6 +76,22 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useSupabase } from '@/composables/useSupabase'
 
+interface CommissionStructure {
+  id: string
+  master_rep_id: string
+  sub_rep_id?: string
+  sub_sub_rep_id?: string
+  master_rep_rate: number
+  sub_rep_rate?: number
+  sub_sub_rep_rate?: number
+  master_rep?: { name: string }
+  sub_rep?: { name: string }
+  sub_sub_rep?: { name: string }
+  masterRepName?: string
+  subRepName?: string
+  subSubRepName?: string
+}
+
 const supabase = useSupabase()
 
 const props = defineProps<{
@@ -91,12 +107,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:commission-structure', structure: any): void
+  (e: 'update:commission-structure', structure: {
+    masterRepId: string
+    subRepId?: string
+    subSubRepId?: string
+    masterRepRate: number
+    subRepRate?: number
+    subSubRepRate?: number
+  }): void
 }>()
 
 // State
 const selectedStructureId = ref('')
-const availableStructures = ref([])
+const availableStructures = ref<CommissionStructure[]>([])
 const masterRepName = ref('')
 const subRepName = ref('')
 const subSubRepName = ref('')
@@ -170,7 +193,7 @@ const loadAvailableStructures = async () => {
     return
   }
 
-  availableStructures.value = data.map(struct => ({
+  availableStructures.value = (data || []).map((struct: CommissionStructure) => ({
     ...struct,
     masterRepName: struct.master_rep?.name,
     subRepName: struct.sub_rep?.name,
