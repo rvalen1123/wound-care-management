@@ -1,144 +1,153 @@
 <template>
-  <div class="flex min-h-full flex-1">
-    <div class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-      <div class="mx-auto w-full max-w-sm lg:w-96">
-        <div>
-          <img class="h-16 w-auto" src="/msc-logo.png" alt="MSC Wound Care" />
-          <h2 class="mt-8 text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</h2>
-          <p class="mt-2 text-sm text-gray-600">
-            Need an account?
-            {{ ' ' }}
-            <button @click="handleRegister" class="font-semibold text-indigo-600 hover:text-indigo-500">
-              Register here
-            </button>
-          </p>
-        </div>
-
-        <div class="mt-10">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <div>
+        <img class="mx-auto h-12 w-auto" src="/msc-logo.png" alt="MSC Wound Care">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
+          Sign in to your account
+        </h2>
+      </div>
+      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
+        <div class="rounded-md shadow-sm -space-y-px">
           <div>
-            <form @submit.prevent="handleLogin" class="space-y-6">
-              <div>
-                <label for="email" class="block text-sm font-medium text-gray-900">Email address</label>
-                <div class="mt-2">
-                  <input 
-                    v-model.trim="email"
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    autocomplete="email" 
-                    required
-                    :disabled="loading"
-                    class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:text-sm sm:leading-6"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
-                <div class="mt-2">
-                  <input 
-                    v-model="password"
-                    id="password" 
-                    name="password" 
-                    type="password" 
-                    autocomplete="current-password" 
-                    required
-                    :disabled="loading"
-                    class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:text-sm sm:leading-6" 
-                  />
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                  <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
-                  <label for="remember-me" class="ml-3 block text-sm text-gray-700">Remember me</label>
-                </div>
-
-                <div class="text-sm">
-                  <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  :disabled="loading || !isFormValid"
-                  class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {{ loading ? 'Signing in...' : 'Sign in' }}
-                </button>
-              </div>
-
-              <div v-if="error" class="rounded-md bg-red-50 p-4">
-                <div class="flex">
-                  <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                  <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">{{ error }}</h3>
-                  </div>
-                </div>
-              </div>
-            </form>
+            <label for="email-address" class="sr-only">Email address</label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              v-model="email"
+              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              placeholder="Email address"
+              :disabled="authStore.loading"
+            >
+          </div>
+          <div>
+            <label for="password" class="sr-only">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+              v-model="password"
+              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              placeholder="Password"
+              :disabled="authStore.loading"
+            >
           </div>
         </div>
-      </div>
-    </div>
-    <div class="relative hidden w-0 flex-1 lg:block">
-      <img class="absolute inset-0 h-full w-full object-cover" src="https://images.unsplash.com/photo-1584515933487-779824d29309?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" alt="Medical background" />
+
+        <div v-if="authStore.error" class="rounded-md bg-red-900 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-300">
+                {{ authStore.error }}
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input
+              id="remember-me"
+              name="remember-me"
+              type="checkbox"
+              v-model="rememberMe"
+              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-700 bg-gray-800 rounded"
+            >
+            <label for="remember-me" class="ml-2 block text-sm text-gray-400">
+              Remember me
+            </label>
+          </div>
+
+          <div class="text-sm">
+            <router-link to="/forgot-password" class="font-medium text-indigo-400 hover:text-indigo-300">
+              Forgot your password?
+            </router-link>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            :disabled="authStore.loading"
+            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <svg
+                class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+            {{ authStore.loading ? 'Signing in...' : 'Sign in' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const email = ref('');
 const password = ref('');
-const error = ref('');
-const loading = ref(false);
+const rememberMe = ref(false);
 
-const isFormValid = computed(() => {
-  return email.value.trim() && password.value.trim();
-});
+const isAuthenticated = computed(() => !!authStore.user);
 
-function handleRegister() {
-  router.push('/register');
-}
-
-async function handleLogin() {
+const handleSubmit = async () => {
   try {
-    if (!isFormValid.value) {
-      error.value = 'Please enter both email and password';
+    console.log('Form values:', {
+      email: email.value,
+      password: password.value ? '********' : '<empty>'
+    });
+
+    if (!email.value || !password.value) {
+      console.error('Email or password is empty');
       return;
     }
 
-    loading.value = true;
-    error.value = '';
+    await authStore.login(email.value, password.value);
 
-    const { error: loginError } = await authStore.login({
-      email: email.value,
-      password: password.value
-    });
-
-    if (loginError) {
-      throw loginError;
+    if (authStore.error) {
+      console.error('Login error:', authStore.error);
+      return;
     }
 
-    router.push('/dashboard');
-  } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Failed to sign in';
+    if (!isAuthenticated.value) {
+      console.error('Not authenticated after login');
+      return;
+    }
+
+    console.log('Login successful, redirecting...');
+    const redirectPath = (route.query.redirect as string) || '/dashboard';
+    router.push(redirectPath);
+  } catch (err) {
     console.error('Login error:', err);
-  } finally {
-    loading.value = false;
   }
-}
+};
 </script>

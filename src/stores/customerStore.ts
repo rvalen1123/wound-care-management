@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
+import { ref } from 'vue';
 
 interface Customer {
   id: string;
@@ -8,26 +8,44 @@ interface Customer {
   email: string;
   phone: string;
   type: 'hospital' | 'clinic' | 'doctor';
+  created_at: string;
+  updated_at?: string;
 }
 
-export const useCustomerStore = defineStore('customers', () => {
+interface NewCustomer {
+  name: string;
+  email: string;
+  phone: string;
+  type: 'hospital' | 'clinic' | 'doctor';
+}
+
+export const useCustomerStore = defineStore('customer', () => {
   const customers = ref<Customer[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
   async function fetchCustomers() {
-    loading.value = true;
-    error.value = null;
-
     try {
-      const { data, error: err } = await supabase
-        .from('customers')
+      loading.value = true;
+      error.value = null;
+
+      const { data, error: supabaseError } = await supabase
+        .from('doctors')
         .select('*')
         .order('name');
 
-      if (err) throw err;
+      if (supabaseError) throw supabaseError;
 
-      customers.value = data || [];
+      // Map the doctors data to our Customer interface
+      customers.value = data.map((doctor: any) => ({
+        id: doctor.id,
+        name: doctor.name,
+        email: doctor.email || '',
+        phone: doctor.phone || '',
+        type: doctor.business_name ? 'clinic' : 'doctor',
+        created_at: doctor.created_at,
+        updated_at: doctor.updated_at
+      }));
     } catch (err) {
       console.error('Error fetching customers:', err);
       error.value = 'Failed to fetch customers';
@@ -36,24 +54,34 @@ export const useCustomerStore = defineStore('customers', () => {
     }
   }
 
-  async function createCustomer(customer: Omit<Customer, 'id'>) {
-    loading.value = true;
-    error.value = null;
-
+  async function createCustomer(customer: NewCustomer) {
     try {
-      const { data, error: err } = await supabase
-        .from('customers')
-        .insert([customer])
+      loading.value = true;
+      error.value = null;
+
+      const { data, error: supabaseError } = await supabase
+        .from('doctors')
+        .insert([{
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          business_name: customer.type === 'doctor' ? null : customer.name
+        }])
         .select()
         .single();
 
-      if (err) throw err;
+      if (supabaseError) throw supabaseError;
 
-      if (data) {
-        customers.value.push(data as Customer);
-      }
-
-      return data;
+      // Add the new customer to the state
+      customers.value.push({
+        id: data.id,
+        name: data.name,
+        email: data.email || '',
+        phone: data.phone || '',
+        type: data.business_name ? 'clinic' : 'doctor',
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      });
     } catch (err) {
       console.error('Error creating customer:', err);
       error.value = 'Failed to create customer';
@@ -63,28 +91,34 @@ export const useCustomerStore = defineStore('customers', () => {
     }
   }
 
-  async function updateCustomer(id: string, updates: Partial<Customer>) {
-    loading.value = true;
-    error.value = null;
-
+  async function updateCustomer(id: string, updates: Partial<NewCustomer>) {
     try {
-      const { data, error: err } = await supabase
-        .from('customers')
-        .update(updates)
+      loading.value = true;
+      error.value = null;
+
+      const { data, error: supabaseError } = await supabase
+        .from('doctors')
+        .update({
+          name: updates.name,
+          email: updates.email,
+          phone: updates.phone,
+          business_name: updates.type === 'doctor' ? null : updates.name
+        })
         .eq('id', id)
         .select()
         .single();
 
-      if (err) throw err;
+      if (supabaseError) throw supabaseError;
 
-      if (data) {
-        const index = customers.value.findIndex((customer: Customer) => customer.id === id);
-        if (index !== -1) {
-          customers.value[index] = { ...customers.value[index], ...data } as Customer;
-        }
+      // Update the customer in the state
+      const index = customers.value.findIndex((customer: Customer) => customer.id === id);
+      if (index !== -1) {
+        customers.value[index] = {
+          ...customers.value[index],
+          ...updates,
+          updated_at: data.updated_at
+        };
       }
-
-      return data;
     } catch (err) {
       console.error('Error updating customer:', err);
       error.value = 'Failed to update customer';
@@ -95,17 +129,18 @@ export const useCustomerStore = defineStore('customers', () => {
   }
 
   async function deleteCustomer(id: string) {
-    loading.value = true;
-    error.value = null;
-
     try {
-      const { error: err } = await supabase
-        .from('customers')
+      loading.value = true;
+      error.value = null;
+
+      const { error: supabaseError } = await supabase
+        .from('doctors')
         .delete()
         .eq('id', id);
 
-      if (err) throw err;
+      if (supabaseError) throw supabaseError;
 
+      // Remove the customer from the state
       customers.value = customers.value.filter((customer: Customer) => customer.id !== id);
     } catch (err) {
       console.error('Error deleting customer:', err);
