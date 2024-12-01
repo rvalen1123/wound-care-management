@@ -1,62 +1,94 @@
 <template>
-  <div class="login-container">
-    <div class="login-card bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <div class="flex justify-center mb-8">
-        <img 
-          src="/msc-logo.png" 
-          alt="MSC Wound Care Logo" 
-          class="h-16 w-auto"
-        />
+  <div class="flex min-h-full flex-1">
+    <div class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
+      <div class="mx-auto w-full max-w-sm lg:w-96">
+        <div>
+          <img class="h-16 w-auto" src="/msc-logo.png" alt="MSC Wound Care" />
+          <h2 class="mt-8 text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</h2>
+          <p class="mt-2 text-sm text-gray-600">
+            Need an account?
+            {{ ' ' }}
+            <button @click="handleRegister" class="font-semibold text-indigo-600 hover:text-indigo-500">
+              Register here
+            </button>
+          </p>
+        </div>
+
+        <div class="mt-10">
+          <div>
+            <form @submit.prevent="handleLogin" class="space-y-6">
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-900">Email address</label>
+                <div class="mt-2">
+                  <input 
+                    v-model.trim="email"
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    autocomplete="email" 
+                    required
+                    :disabled="loading"
+                    class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:text-sm sm:leading-6"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
+                <div class="mt-2">
+                  <input 
+                    v-model="password"
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    autocomplete="current-password" 
+                    required
+                    :disabled="loading"
+                    class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:text-sm sm:leading-6" 
+                  />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+                  <label for="remember-me" class="ml-3 block text-sm text-gray-700">Remember me</label>
+                </div>
+
+                <div class="text-sm">
+                  <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot your password?</a>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  :disabled="loading || !isFormValid"
+                  class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ loading ? 'Signing in...' : 'Sign in' }}
+                </button>
+              </div>
+
+              <div v-if="error" class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">{{ error }}</h3>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-[#003087]">Email</label>
-          <input
-            v-model.trim="email"
-            type="email"
-            required
-            autocomplete="username"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-[#003087]">Password</label>
-          <input
-            v-model="password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
-          />
-        </div>
-
-        <div class="flex gap-3">
-          <button
-            type="submit"
-            :disabled="loading || !isFormValid"
-            class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#003087] hover:bg-[#002266] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003087] disabled:opacity-50"
-          >
-            {{ loading ? 'Logging in...' : 'Login' }}
-          </button>
-          
-          <button
-            type="button"
-            @click="handleRegister"
-            class="flex-1 py-2 px-4 border border-[#E31837] rounded-md shadow-sm text-sm font-medium text-[#E31837] bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E31837]"
-          >
-            Register
-          </button>
-        </div>
-
-        <div 
-          v-if="error"
-          class="p-4 bg-red-50 text-[#E31837] rounded text-sm"
-        >
-          {{ error }}
-        </div>
-      </form>
+    </div>
+    <div class="relative hidden w-0 flex-1 lg:block">
+      <img class="absolute inset-0 h-full w-full object-cover" src="https://images.unsplash.com/photo-1584515933487-779824d29309?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" alt="Medical background" />
     </div>
   </div>
 </template>
@@ -93,7 +125,7 @@ async function handleLogin() {
     error.value = ''
 
     const { error: loginError } = await authStore.login({
-      email: email.value.trim(),
+      email: email.value,
       password: password.value
     })
 
@@ -110,19 +142,3 @@ async function handleLogin() {
   }
 }
 </script>
-
-<style scoped>
-.login-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 1rem;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-}
-</style>

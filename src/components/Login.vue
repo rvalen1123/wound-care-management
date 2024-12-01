@@ -1,77 +1,66 @@
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <h1 class="text-2xl font-bold text-center text-gray-800 mb-8">
-        Wound Care Management Platform
-      </h1>
+      <div class="flex justify-center mb-8">
+        <img 
+          src="/msc-logo.png" 
+          alt="MSC Wound Care Logo" 
+          class="h-16 w-auto"
+        />
+      </div>
       
       <form @submit.prevent="handleEmailLogin" class="space-y-4 mb-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <label class="block text-sm font-medium text-[#003087]">Email</label>
           <input
-            v-model="email"
+            v-model.trim="email"
             type="email"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            autocomplete="username"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <label class="block text-sm font-medium text-[#003087]">Password</label>
           <input
             v-model="password"
             type="password"
             required
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            autocomplete="current-password"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
           />
         </div>
 
         <button
           type="submit"
           :disabled="loading"
-          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#003087] hover:bg-[#002266] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003087] disabled:opacity-50"
         >
           {{ loading ? 'Signing in...' : 'Sign in' }}
         </button>
+
+        <div 
+          v-if="error"
+          class="p-4 bg-red-50 text-[#E31837] rounded text-sm"
+        >
+          {{ error }}
+        </div>
       </form>
 
-      <div class="relative mb-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-300"></div>
-        </div>
-        <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
-
-      <div class="space-y-4">
-        <button
-          @click="handleGoogleAuth"
-          type="button"
-          class="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <img src="@/assets/google-icon.svg" alt="Google" class="w-5 h-5" />
-          Sign in with Google
-        </button>
-
-        <div class="text-center">
-          <router-link to="/register" class="text-sm text-indigo-600 hover:text-indigo-500">
-            Don't have an account? Sign up
-          </router-link>
-        </div>
-      </div>
-
-      <div v-if="error" class="mt-4 p-4 bg-red-50 text-red-600 rounded text-sm">
-        {{ error }}
+      <!-- Add the test component -->
+      <div class="mt-8 pt-8 border-t">
+        <TestSupabase />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import TestSupabase from '@/components/TestSupabase.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -81,37 +70,34 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
-onMounted(async () => {
-  // Check profiles table structure
-  await authStore.checkProfilesTable()
-})
-
-const handleEmailLogin = async () => {
+async function handleEmailLogin() {
   try {
     loading.value = true
     error.value = ''
 
-    const { error: loginError } = await authStore.login(email.value, password.value)
+    console.log('Starting login process...')
+    const { data, error: loginError } = await authStore.login({
+      email: email.value,
+      password: password.value
+    })
+
+    console.log('Login response in component:', { data, error: loginError })
 
     if (loginError) {
       throw loginError
     }
 
+    if (!authStore.isAuthenticated) {
+      throw new Error('Login succeeded but authentication state not set')
+    }
+
+    console.log('Login successful, redirecting to dashboard...')
     router.push('/dashboard')
   } catch (err) {
     error.value = err.message || 'Failed to sign in'
+    console.error('Login error in component:', err)
   } finally {
     loading.value = false
-  }
-}
-
-const handleGoogleAuth = async () => {
-  try {
-    error.value = ''
-    await authStore.loginWithGoogle()
-  } catch (err) {
-    error.value = 'Authentication failed. Please try again.'
-    console.error('Auth Error:', err)
   }
 }
 

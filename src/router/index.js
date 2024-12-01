@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuth } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/auth'
 import DashboardView from '@/views/Dashboard.vue'
 import GraftOrderManagement from '@/views/GraftOrderManagement.vue'
 import CustomerManagement from '@/views/CustomerManagement.vue'
@@ -75,15 +75,22 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+  const authStore = useAuthStore()
   
+  // If route requires auth and user is not authenticated
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!isAuthenticated.value) {
+    if (!authStore.isAuthenticated) {
       next({ name: 'Login' })
     } else {
       next()
     }
-  } else {
+  } 
+  // If going to login/register while already authenticated
+  else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
+    next({ name: 'Dashboard' })
+  }
+  // All other routes
+  else {
     next()
   }
 })
