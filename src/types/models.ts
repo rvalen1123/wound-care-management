@@ -37,6 +37,9 @@ export interface Order {
   updated_at: string
   doctor?: Doctor
   product?: Product
+  payment_date?: string
+  payment_amount?: number
+  payment_status?: string
 }
 
 export interface Rep {
@@ -95,17 +98,21 @@ export interface AuditLog {
 }
 
 export interface CommissionStructure {
-  master_rep_id: string
-  sub_rep_id?: string
-  sub_sub_rep_id?: string
+  id: number
+  master_rep_id: number
+  sub_rep_id?: number
+  sub_sub_rep_id?: number
   master_rep_percentage: number
-  sub_rep_percentage: number
-  sub_sub_rep_percentage: number
+  sub_rep_percentage?: number
+  sub_sub_rep_percentage?: number
   is_default: boolean
   created_by: string
   created_at: string
   updated_by?: string
   updated_at?: string
+  commission_rate?: number
+  effective_date?: string
+  expiration_date?: string
 }
 
 export interface RepCommission {

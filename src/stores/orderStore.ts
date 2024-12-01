@@ -45,7 +45,7 @@ export const useOrderStore = defineStore('orders', () => {
     try {
       loading.value = true
       const { data, error: err } = await supabase
-        .from<Order, any>('orders')
+        .from<Order>('orders')
         .select(`
           *,
           doctor:doctor_id(*),
@@ -70,7 +70,7 @@ export const useOrderStore = defineStore('orders', () => {
     try {
       loading.value = true
       const { data, error: err } = await supabase
-        .from<Order, any>('orders')
+        .from<Order>('orders')
         .insert([orderData])
         .select()
         .single()
@@ -94,7 +94,7 @@ export const useOrderStore = defineStore('orders', () => {
     try {
       loading.value = true
       const { data, error: err } = await supabase
-        .from<Order, any>('orders')
+        .from<Order>('orders')
         .update(updates)
         .eq('id', id)
         .select()
@@ -142,7 +142,7 @@ export const useOrderStore = defineStore('orders', () => {
   async function fetchDefaultCommissionStructure(masterRepId: string): Promise<CommissionStructure | null> {
     try {
       const { data, error } = await supabase
-        .from<CommissionStructure, any>('commission_structures')
+        .from<CommissionStructure>('commission_structures')
         .select('*')
         .eq('master_rep_id', masterRepId)
         .eq('is_default', true)
@@ -225,7 +225,7 @@ export const useOrderStore = defineStore('orders', () => {
 
       // Create commission structure in database
       const { data: structureData, error: structureError } = await supabase
-        .from<CommissionStructure, any>('commission_structures')
+        .from<CommissionStructure>('commission_structures')
         .insert({
           master_rep_id: commissionData.masterRepId,
           sub_rep_id: commissionData.subRepId,
@@ -259,7 +259,7 @@ export const useOrderStore = defineStore('orders', () => {
 
       // Update order in database
       const { error: orderError } = await supabase
-        .from<Order, any>('orders')
+        .from<Order>('orders')
         .update({
           commission_structure_id: structureData.id,
           updated_at: timestamp,
@@ -286,7 +286,7 @@ export const useOrderStore = defineStore('orders', () => {
 
     try {
       const { data: order, error: orderError } = await supabase
-        .from<Order, any>('orders')
+        .from<Order>('orders')
         .select(`
           *,
           commission_structure:commission_structures(*)
@@ -448,3 +448,5 @@ export const useOrderStore = defineStore('orders', () => {
     calculateOrderValues
   }
 })
+
+export default useOrderStore

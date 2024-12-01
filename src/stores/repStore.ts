@@ -88,7 +88,7 @@ export const useRepStore = defineStore('rep', () => {
       }
 
       const { data: commissions, error: err } = await supabase
-        .from('commission_history')
+        .from<{ period: string, orders: number, base_commission: number, effective_commission: number, sub_rep_share: number }>('commission_history')
         .select('*')
         .eq('rep_id', currentRep.id)
         .order('period', { ascending: false })
@@ -119,7 +119,14 @@ export const useRepStore = defineStore('rep', () => {
       }
 
       const { data: orders, error: err } = await supabase
-        .from('orders')
+        .from<{ 
+          id: string, 
+          date_of_service: string, 
+          doctor_id: string, 
+          product_id: string, 
+          doctor: { id: string, name: string }, 
+          product: { id: string, name: string } 
+        }>('orders')
         .select(`
           *,
           doctor:doctor_id(*),
