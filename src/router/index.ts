@@ -1,120 +1,82 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
+import '@/types/router'
 import { useAuthStore } from '@/stores/auth'
 
-// Views
-import DashboardView from '@/views/Dashboard.vue'
-import GraftOrderManagement from '@/views/GraftOrderManagement.vue'
-import CustomerManagement from '@/views/CustomerManagement.vue'
-import CustomerProfile from '@/views/CustomerProfile.vue'
-import FinancialReporting from '@/views/FinancialReporting.vue'
-import PaymentTracking from '@/views/PaymentTracking.vue'
-import OrderDetails from '@/views/OrderDetails.vue'
-import Login from '@/components/Login.vue'
-import Register from '@/views/Register.vue'
-import ManufacturerManagement from '@/views/ManufacturerManagement.vue'
-import OrderForm from '@/views/OrderForm.vue'
-import CommissionStructureManagement from '@/views/CommissionStructureManagement.vue'
-import RepDashboard from '@/components/rep/RepDashboard.vue'
-
-const routes: RouteRecordRaw[] = [
+const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: DashboardView,
+    name: 'dashboard',
+    component: () => import('@/views/Dashboard.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/login',
-    name: 'Login',
-    component: Login,
-    meta: { requiresAuth: false }
+    name: 'login',
+    component: () => import('@/views/Login.vue')
   },
   {
-    path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: DashboardView,
+    path: '/orders',
+    name: 'orders',
+    component: () => import('@/views/orders/OrderList.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/graft-order-management',
-    name: 'GraftOrderManagement',
-    component: GraftOrderManagement,
+    path: '/orders/new',
+    name: 'new-order',
+    component: () => import('@/views/orders/OrderForm.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/customer-management',
-    name: 'CustomerManagement',
-    component: CustomerManagement,
+    path: '/orders/:id/edit',
+    name: 'edit-order',
+    component: () => import('@/views/orders/OrderForm.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/customer/:id',
-    name: 'CustomerProfile',
-    component: CustomerProfile,
+    path: '/reps',
+    name: 'reps',
+    component: () => import('@/views/rep/RepDashboard.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/financial-reporting',
-    name: 'FinancialReporting',
-    component: FinancialReporting,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/payment-tracking',
-    name: 'PaymentTracking',
-    component: PaymentTracking,
+    path: '/doctors',
+    name: 'doctors',
+    component: () => import('@/views/CustomerManagement.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/order/:id',
-    name: 'OrderDetails',
-    component: OrderDetails,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/order-form',
-    name: 'OrderForm',
-    component: OrderForm,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/manufacturer-management',
-    name: 'ManufacturerManagement',
-    component: ManufacturerManagement,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/commission-structure',
-    name: 'CommissionStructureManagement',
-    component: CommissionStructureManagement,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/rep/dashboard',
-    name: 'RepDashboard',
-    component: RepDashboard,
+    path: '/reports',
+    name: 'reports',
+    component: () => import('@/views/FinancialReporting.vue'),
     meta: { requiresAuth: true }
   }
-]
+] as const
 
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-router.beforeEach(async (to) => {
+// Navigation guard with proper types
+router.beforeEach(async (
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) => {
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+    next({ 
+      name: 'login', 
+      query: { redirect: to.fullPath } 
+    })
+  } else {
+    next()
   }
 })
 
 export default router
+
+// Export type-safe router instance
+export type Router = typeof router
