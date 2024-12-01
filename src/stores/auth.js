@@ -35,8 +35,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (credentials) => {
     try {
+      console.log('Login attempt with:', credentials)
+      
+      if (!credentials?.email || !credentials?.password) {
+        throw new Error('Email and password are required')
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
+        email: credentials.email.trim(),
         password: credentials.password
       })
 
@@ -60,7 +66,8 @@ export const useAuthStore = defineStore('auth', () => {
         role: profile?.role || data.user.user_metadata?.role,
         provider: 'email'
       }
-      isAdmin.value = ADMIN_EMAILS.includes(credentials.email)
+      
+      isAdmin.value = ADMIN_EMAILS.includes(credentials.email.trim())
       isAuthenticated.value = true
 
       return { data, error: null }

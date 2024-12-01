@@ -13,7 +13,7 @@
         <div>
           <label class="block text-sm font-medium text-[#003087]">Email</label>
           <input
-            v-model="email"
+            v-model.trim="email"
             type="email"
             required
             autocomplete="username"
@@ -35,7 +35,7 @@
         <div class="flex gap-3">
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="loading || !isFormValid"
             class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#003087] hover:bg-[#002266] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003087] disabled:opacity-50"
           >
             {{ loading ? 'Logging in...' : 'Login' }}
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -74,17 +74,26 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
+const isFormValid = computed(() => {
+  return email.value.trim() && password.value.trim()
+})
+
 function handleRegister() {
   router.push('/register')
 }
 
 async function handleLogin() {
   try {
+    if (!isFormValid.value) {
+      error.value = 'Please enter both email and password'
+      return
+    }
+
     loading.value = true
     error.value = ''
 
     const { error: loginError } = await authStore.login({
-      email: email.value,
+      email: email.value.trim(),
       password: password.value
     })
 
