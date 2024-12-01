@@ -21,6 +21,13 @@
               <a href="#" class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Team</a>
               <a href="#" class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Projects</a>
               <a href="#" class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Calendar</a>
+              <router-link 
+                to="/manufacturers" 
+                class="text-gray-600 hover:text-green-600 px-3 py-2 text-sm font-medium"
+                active-class="text-green-600 border-b-2 border-green-600"
+              >
+                Manufacturers
+              </router-link>
             </div>
           </div>
           <div class="flex items-center">

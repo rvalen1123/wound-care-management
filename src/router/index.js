@@ -9,6 +9,9 @@ import PaymentTracking from '@/views/PaymentTracking.vue'
 import OrderDetails from '@/views/OrderDetails.vue'
 import Login from '@/components/Login.vue'
 import Register from '@/views/Register.vue'
+import ManufacturerManagement from '@/views/ManufacturerManagement.vue'
+import OrderForm from '@/views/OrderForm.vue'
+import CommissionStructureManagement from '@/views/CommissionStructureManagement.vue'
 
 const routes = [
   {
@@ -66,6 +69,30 @@ const routes = [
     name: 'Payments',
     component: PaymentTracking,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/manufacturers',
+    name: 'Manufacturers',
+    component: ManufacturerManagement,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders/new',
+    name: 'CreateOrder',
+    component: OrderForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders/:id/edit',
+    name: 'EditOrder',
+    component: OrderForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/commission-structures',
+    name: 'CommissionStructures',
+    component: CommissionStructureManagement,
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

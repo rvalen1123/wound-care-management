@@ -274,14 +274,305 @@
 
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog></ConfirmDialog>
+
+    <!-- Add Commission Breakdown section -->
+    <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Commission Breakdown</h2>
+        <div v-if="isAdmin" class="flex items-center gap-2">
+          <button
+            @click="showEditCommissionDialog = true"
+            class="text-blue-600 hover:text-blue-800"
+          >
+            Edit Commission Structure
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Master Rep Commission -->
+        <div v-if="order.master_rep_id" class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium">Master Rep</h3>
+            <span class="text-sm text-gray-500">{{ order.master_rep?.rep_name }}</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Rate:</span>
+              <span class="font-medium">{{ order.master_rep_rate }}%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Amount:</span>
+              <span class="font-medium">${{ formatNumber(commissionAmounts.masterRep) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Status:</span>
+              <PrimeTag 
+                :value="order.master_rep_paid_date ? 'Paid' : 'Pending'" 
+                :severity="order.master_rep_paid_date ? 'success' : 'warning'"
+              />
+            </div>
+            <div v-if="order.master_rep_paid_date" class="flex justify-between">
+              <span class="text-sm text-gray-600">Paid Date:</span>
+              <span>{{ formatDate(order.master_rep_paid_date) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub Rep Commission -->
+        <div v-if="order.sub_rep_id" class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium">Sub Rep</h3>
+            <span class="text-sm text-gray-500">{{ order.sub_rep?.rep_name }}</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Rate:</span>
+              <span class="font-medium">{{ order.sub_rep_rate }}%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Amount:</span>
+              <span class="font-medium">${{ formatNumber(commissionAmounts.subRep) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Status:</span>
+              <PrimeTag 
+                :value="order.sub_rep_paid_date ? 'Paid' : 'Pending'" 
+                :severity="order.sub_rep_paid_date ? 'success' : 'warning'"
+              />
+            </div>
+            <div v-if="order.sub_rep_paid_date" class="flex justify-between">
+              <span class="text-sm text-gray-600">Paid Date:</span>
+              <span>{{ formatDate(order.sub_rep_paid_date) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-Sub Rep Commission -->
+        <div v-if="order.sub_sub_rep_id" class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium">Sub-Sub Rep</h3>
+            <span class="text-sm text-gray-500">{{ order.sub_sub_rep?.rep_name }}</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Rate:</span>
+              <span class="font-medium">{{ order.sub_sub_rep_rate }}%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Amount:</span>
+              <span class="font-medium">${{ formatNumber(commissionAmounts.subSubRep) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Status:</span>
+              <PrimeTag 
+                :value="order.sub_sub_rep_paid_date ? 'Paid' : 'Pending'" 
+                :severity="order.sub_sub_rep_paid_date ? 'success' : 'warning'"
+              />
+            </div>
+            <div v-if="order.sub_sub_rep_paid_date" class="flex justify-between">
+              <span class="text-sm text-gray-600">Paid Date:</span>
+              <span>{{ formatDate(order.sub_sub_rep_paid_date) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commission Summary -->
+      <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <span class="text-sm text-gray-600">Total Commission:</span>
+            <p class="text-lg font-semibold">${{ formatNumber(totalCommissionAmount) }}</p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Total Rate:</span>
+            <p class="text-lg font-semibold">{{ totalCommissionRate }}%</p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Paid Amount:</span>
+            <p class="text-lg font-semibold">${{ formatNumber(totalPaidAmount) }}</p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Remaining:</span>
+            <p class="text-lg font-semibold">${{ formatNumber(remainingAmount) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Payment History</h2>
+        <div v-if="isAdmin" class="flex items-center gap-2">
+          <button
+            @click="showAddPaymentDialog = true"
+            class="text-blue-600 hover:text-blue-800"
+          >
+            Record Payment
+          </button>
+        </div>
+      </div>
+
+      <DataTable :value="paymentHistory" class="p-datatable-sm">
+        <Column field="payment_date" header="Date">
+          <template #body="{ data }">
+            {{ formatDate(data.payment_date) }}
+          </template>
+        </Column>
+        <Column field="amount" header="Amount">
+          <template #body="{ data }">
+            ${{ formatNumber(data.amount) }}
+          </template>
+        </Column>
+        <Column field="recipient_type" header="Recipient" />
+        <Column field="recipient_name" header="Name" />
+        <Column field="status" header="Status">
+          <template #body="{ data }">
+            <PrimeTag :value="data.status" :severity="getPaymentStatusSeverity(data.status)" />
+          </template>
+        </Column>
+        <Column field="notes" header="Notes" />
+      </DataTable>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4">Audit Log</h2>
+      <CommissionAuditLog :structureId="order.commission_structure_id" />
+    </div>
+
+    <!-- Edit Commission Dialog -->
+    <Dialog
+      v-model:visible="showEditCommissionDialog"
+      header="Edit Commission Structure"
+      :modal="true"
+      class="p-fluid"
+    >
+      <div class="space-y-4">
+        <!-- Master Rep -->
+        <div class="form-group">
+          <label>Master Rep Rate (%)</label>
+          <InputNumber 
+            v-model="editedCommission.masterRepRate"
+            :min="0"
+            :max="100"
+            @change="validateEditedRates"
+          />
+        </div>
+
+        <!-- Sub Rep -->
+        <div class="form-group">
+          <label>Sub Rep Rate (%)</label>
+          <InputNumber 
+            v-model="editedCommission.subRepRate"
+            :min="0"
+            :max="100"
+            :disabled="!order.sub_rep_id"
+            @change="validateEditedRates"
+          />
+        </div>
+
+        <!-- Sub-Sub Rep -->
+        <div class="form-group">
+          <label>Sub-Sub Rep Rate (%)</label>
+          <InputNumber 
+            v-model="editedCommission.subSubRepRate"
+            :min="0"
+            :max="100"
+            :disabled="!order.sub_sub_rep_id"
+            @change="validateEditedRates"
+          />
+        </div>
+
+        <div class="text-sm" :class="editedTotalRate > 100 ? 'text-red-600' : 'text-green-600'">
+          Total Rate: {{ editedTotalRate }}%
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          @click="showEditCommissionDialog = false"
+          class="p-button-text"
+        />
+        <Button
+          label="Save"
+          icon="pi pi-check"
+          @click="saveCommissionChanges"
+          :disabled="editedTotalRate > 100"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Add Payment Dialog -->
+    <Dialog
+      v-model:visible="showAddPaymentDialog"
+      header="Record Payment"
+      :modal="true"
+      class="p-fluid"
+    >
+      <div class="space-y-4">
+        <div class="form-group">
+          <label>Recipient</label>
+          <Dropdown
+            v-model="newPayment.recipientType"
+            :options="availableRecipients"
+            optionLabel="name"
+            optionValue="type"
+            placeholder="Select Recipient"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Amount</label>
+          <InputNumber
+            v-model="newPayment.amount"
+            mode="currency"
+            currency="USD"
+            :max="getMaxPaymentAmount()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Payment Date</label>
+          <Calendar v-model="newPayment.paymentDate" />
+        </div>
+
+        <div class="form-group">
+          <label>Notes</label>
+          <Textarea v-model="newPayment.notes" rows="3" />
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          @click="showAddPaymentDialog = false"
+          class="p-button-text"
+        />
+        <Button
+          label="Save"
+          icon="pi pi-check"
+          @click="savePayment"
+          :disabled="!isValidPayment"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/services/auth.service'
 import { confirmDialog } from 'primevue/confirmdialog'
+import { useSupabase } from '@/composables/useSupabase'
+import { useCommission } from '@/composables/useCommission'
+import CommissionAuditLog from '@/components/commission/CommissionAuditLog.vue'
 
 export default {
   name: 'OrderDetails',
