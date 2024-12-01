@@ -1,10 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-const routes: RouteRecordRaw[] = [
+interface RouteLocation {
+  meta: {
+    requiresAuth?: boolean;
+  };
+  fullPath: string;
+}
+
+interface NavigationGuard {
+  (to: RouteLocation, from: RouteLocation, next: (arg?: any) => void): void;
+}
+
+const routes = [
   {
     path: '/',
+    redirect: '/dashboard'
+  },
+  {
+    path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/Dashboard.vue'),
     meta: { requiresAuth: true }
@@ -20,10 +34,33 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/Register.vue')
   },
   {
-    path: '/orders',
-    name: 'orders',
+    path: '/graft-orders',
+    name: 'graft-orders',
     component: () => import('../views/orders/OrderList.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/customers',
+    name: 'customers',
+    component: () => import('../views/CustomerManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/financial-reports',
+    name: 'financial-reports',
+    component: () => import('../views/FinancialReporting.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/payments',
+    name: 'payments',
+    component: () => import('../views/PaymentTracking.vue'),
+    meta: { requiresAuth: true }
+  },
+  // Legacy routes for backward compatibility
+  {
+    path: '/orders',
+    redirect: '/graft-orders'
   },
   {
     path: '/orders/new',
@@ -46,14 +83,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/doctors',
     name: 'doctors',
-    component: () => import('../views/CustomerManagement.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/reports',
-    name: 'reports',
-    component: () => import('../views/FinancialReporting.vue'),
-    meta: { requiresAuth: true }
+    redirect: '/customers'
   }
 ]
 
@@ -62,8 +92,8 @@ const router = createRouter({
   routes
 })
 
-// Navigation guard
-router.beforeEach(async (to, from, next) => {
+// Navigation guard with basic types
+const beforeEach: NavigationGuard = async (to, from, next) => {
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -74,6 +104,8 @@ router.beforeEach(async (to, from, next) => {
   } else {
     next()
   }
-})
+}
+
+router.beforeEach(beforeEach)
 
 export default router
