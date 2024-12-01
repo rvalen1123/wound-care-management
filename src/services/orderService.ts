@@ -134,13 +134,24 @@ export const orderService = {
     }
   },
 
-  async approveOrder(id: number, userId: string): Promise<Order> {
-    const updates = {
-      status: 'approved',
-      approved_by: userId,
-      approved_at: new Date().toISOString()
-    }
+  async approveOrder(orderId: string, userId: string): Promise<Order> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({
+          status: 'approved' as const,
+          approved_by: userId,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+        .single()
 
-    return this.updateOrder(id, updates)
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error approving order:', error)
+      throw error
+    }
   }
 }

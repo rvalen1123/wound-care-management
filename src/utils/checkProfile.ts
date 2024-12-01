@@ -39,8 +39,7 @@ interface TableDefinition {
 
 export const checkProfileTable = async (): Promise<void> => {
   try {
-    // Get table information
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
       .select('*')
       .limit(1)
@@ -50,28 +49,9 @@ export const checkProfileTable = async (): Promise<void> => {
       return
     }
 
-    // Get table definition
-    const { data: definition, error: defError } = await supabase
-      .rpc('get_table_definition', { table_name: 'profiles' })
-
-    if (defError) {
-      console.error('Error getting table definition:', defError)
-      return
-    }
-
-    // Log table structure
-    console.log('Profile table definition:', definition)
-
-    // Verify required columns exist
-    const requiredColumns = ['id', 'user_id', 'role', 'created_at', 'updated_at']
-    const missingColumns = requiredColumns.filter(col => 
-      !(definition as TableDefinition[]).some(def => def.column_name === col)
-    )
-
-    if (missingColumns.length > 0) {
-      console.error('Missing required columns:', missingColumns)
-    }
+    // Table exists and is accessible
   } catch (error) {
-    console.error('Error in checkProfileTable:', error)
+    console.error('Error checking profiles table:', error)
+    throw error
   }
 }

@@ -5,6 +5,11 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -19,19 +24,15 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
+      "@components/*": ["./src/components/*"],
+      "@utils/*": ["./src/utils/*"],
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "@vue/runtime-core"],
+    "incremental": true,
+    "disableSizeLimit": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "src/shims-vue.d.ts",
-    "src/env.d.ts"
-  ],
+  "include": ["src/**/*", "src/env.d.ts"],
+  "exclude": ["node_modules", "dist"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

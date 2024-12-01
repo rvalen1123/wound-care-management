@@ -1,10 +1,4 @@
-import type { DefineComponent } from 'vue'
-import * as CommissionAuditLog from './CommissionAuditLog.vue'
-import * as CommissionStructureManager from './CommissionStructureManager.vue'
-import * as OrderCommissionBreakdown from './OrderCommissionBreakdown.vue'
-
-export {
-  CommissionAuditLog,
-  CommissionStructureManager,
-  OrderCommissionBreakdown
-}
+// Export commission-related components
+export { default as CommissionAuditLog } from './CommissionAuditLog.vue'
+export { default as CommissionStructureManager } from './CommissionStructureManager.vue'
+export { default as OrderCommissionBreakdown } from './OrderCommissionBreakdown.vue'

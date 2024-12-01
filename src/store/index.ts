@@ -1,7 +1,7 @@
 import { createStore } from 'vuex'
 import type { InjectionKey } from 'vue'
 import type { Store } from 'vuex'
-import type { User, Order, Customer } from '@/types'
+import type { User, Order, OrderStatus } from '@/types'
 
 interface FinancialMetrics {
   totalRevenue: number
@@ -12,7 +12,6 @@ interface FinancialMetrics {
 interface State {
   user: User | null
   orders: Order[]
-  customers: Customer[]
   financialMetrics: FinancialMetrics
 }
 
@@ -22,7 +21,6 @@ export const store = createStore<State>({
   state: {
     user: null,
     orders: [],
-    customers: [],
     financialMetrics: {
       totalRevenue: 0,
       pendingPayments: 0,
@@ -36,14 +34,11 @@ export const store = createStore<State>({
     addOrder(state, order: Order) {
       state.orders.push(order)
     },
-    updateOrderStatus(state, { orderId, status }: { orderId: number; status: string }) {
+    updateOrderStatus(state, { orderId, status }: { orderId: string; status: OrderStatus }) {
       const order = state.orders.find(o => o.id === orderId)
       if (order) {
         order.status = status
       }
-    },
-    addCustomer(state, customer: Customer) {
-      state.customers.push(customer)
     },
     updateFinancialMetrics(state, metrics: Partial<FinancialMetrics>) {
       state.financialMetrics = { ...state.financialMetrics, ...metrics }
@@ -54,39 +49,23 @@ export const store = createStore<State>({
       try {
         const response = await fetch('/api/orders')
         const orders = await response.json()
-        orders.forEach((order: Order) => commit('addOrder', order))
+        commit('setOrders', orders)
       } catch (error) {
         console.error('Error fetching orders:', error)
-      }
-    },
-    async createOrder({ commit }, orderData: Partial<Order>) {
-      try {
-        const response = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData)
-        })
-        const order = await response.json()
-        commit('addOrder', order)
-        return order
-      } catch (error) {
-        console.error('Error creating order:', error)
         throw error
       }
     },
-    async updateOrderStatus({ commit }, payload: { orderId: number; status: string }) {
+    async updateOrderStatus({ commit }, payload: { orderId: string; status: OrderStatus }) {
       try {
         const response = await fetch(`/api/orders/${payload.orderId}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: payload.status })
         })
-        const updatedOrder = await response.json()
-        commit('updateOrderStatus', { 
-          orderId: updatedOrder.id, 
-          status: updatedOrder.status 
-        })
-        return updatedOrder
+        
+        if (!response.ok) throw new Error('Failed to update order status')
+        
+        commit('updateOrderStatus', payload)
       } catch (error) {
         console.error('Error updating order status:', error)
         throw error
@@ -94,18 +73,12 @@ export const store = createStore<State>({
     }
   },
   getters: {
-    getPendingOrders: (state): Order[] => {
-      return state.orders.filter(order => order.status === 'pending')
-    },
-    getOrderById: (state) => (id: number): Order | undefined => {
-      return state.orders.find(order => order.id === id)
-    },
-    getTotalRevenue: (state): number => {
-      return state.financialMetrics.totalRevenue
-    }
+    getPendingOrders: (state) => state.orders.filter(order => order.status === 'pending'),
+    getOrderById: (state) => (id: string) => state.orders.find(order => order.id === id),
+    getTotalRevenue: (state) => state.financialMetrics.totalRevenue
   }
 })
 
-export function useStore(): Store<State> {
-  return store
+export function useStore() {
+  return store as Store<State>
 }

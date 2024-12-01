@@ -96,14 +96,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Order, Doctor, Product } from '@/types/models'
+import type { Product, Doctor } from '@/types'
 import { orderService } from '@/services/orderService'
 import { supabase } from '@/lib/supabaseClient'
-import { formatCurrency } from '@/utils/formatters'
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'order-added'): void
+  (e: 'order-created'): void
 }>()
 
 const doctors = ref<Doctor[]>([])
@@ -112,82 +111,80 @@ const products = ref<Product[]>([])
 const formData = ref({
   doctor_id: '',
   product_id: '',
-  date_of_service: '',
   size: '',
-  units: 0
+  date_of_service: '',
+  units: 1
 })
 
 const calculations = ref<{
-  units: number
   invoiceAmount: number
-  expectedCollectionDate: string
   mscCommission: number
+  expectedCollectionDate: string
 } | null>(null)
 
-const selectedProduct = computed(() => {
-  return products.value.find(p => p.id === formData.value.product_id) || null
-})
+const selectedProduct = computed(() => 
+  products.value.find(p => p.id === formData.value.product_id)
+)
 
-const loadDoctors = async () => {
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+
+async function loadDoctors() {
   const { data, error } = await supabase
     .from('doctors')
     .select('*')
-    .order('name')
-
-  if (error) throw error
-  doctors.value = data
+  
+  if (error) console.error('Error loading doctors:', error)
+  else doctors.value = data
 }
 
-const loadProducts = async () => {
+async function loadProducts() {
   const { data, error } = await supabase
     .from('products')
     .select('*')
-    .order('name')
-
-  if (error) throw error
-  products.value = data
+  
+  if (error) console.error('Error loading products:', error)
+  else products.value = data
 }
 
-const calculateOrder = () => {
-  if (!selectedProduct.value) return
+function calculateOrder() {
+  if (!selectedProduct.value || !formData.value.units) {
+    calculations.value = null
+    return
+  }
 
+  const product = selectedProduct.value
   const units = formData.value.units
-  const basePrice = selectedProduct.value.base_price || 0
-  const invoiceAmount = units * basePrice
 
-  // Add 30 days to the date of service for expected collection
-  const serviceDate = new Date(formData.value.date_of_service)
-  const expectedCollectionDate = new Date(serviceDate)
-  expectedCollectionDate.setDate(expectedCollectionDate.getDate() + 30)
-
-  // Calculate MSC commission (20% of invoice amount)
-  const mscCommission = invoiceAmount * 0.2
+  const invoiceAmount = product.national_asp * units
+  const mscCommission = invoiceAmount * 0.15 // 15% commission
+  const expectedCollectionDate = new Date()
+  expectedCollectionDate.setDate(expectedCollectionDate.getDate() + 30) // 30 days from now
 
   calculations.value = {
-    units,
     invoiceAmount,
-    expectedCollectionDate: expectedCollectionDate.toISOString(),
-    mscCommission
+    mscCommission,
+    expectedCollectionDate: expectedCollectionDate.toISOString()
   }
 }
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   if (!calculations.value) return
 
   try {
-    await orderService.createOrder({
+    const orderData = {
+      ...formData.value,
       doctor_id: parseInt(formData.value.doctor_id),
       product_id: parseInt(formData.value.product_id),
-      date_of_service: formData.value.date_of_service,
-      size: formData.value.size,
-      units: calculations.value.units,
-      invoice_to_doc: calculations.value.invoiceAmount,
-      expected_collection_date: calculations.value.expectedCollectionDate,
+      invoice_amount: calculations.value.invoiceAmount,
       msc_commission: calculations.value.mscCommission,
-      status: 'pending'
-    })
+      expected_collection_date: calculations.value.expectedCollectionDate,
+      status: 'pending' as const
+    }
 
-    emit('order-added')
+    await orderService.createOrder(orderData)
+    emit('order-created')
+    emit('close')
   } catch (error) {
     console.error('Error creating order:', error)
   }

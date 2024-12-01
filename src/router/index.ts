@@ -100,26 +100,12 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach(async (
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
-
-  if (requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-    return
+  
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
-
-  if (requiresAdmin && !authStore.isAdmin) {
-    next('/dashboard')
-    return
-  }
-
-  next()
 })
 
 export default router
