@@ -31,11 +31,6 @@ export const hasPermission = (user: User | null, requiredRole: 'admin' | 'rep' |
   }
 }
 
-interface TableDefinition {
-  column_name: string
-  data_type: string
-  is_nullable: boolean
-}
 
 export const checkProfileTable = async (): Promise<void> => {
   try {

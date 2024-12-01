@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { mount } from '@vue/test-utils'
 import AddOrderModal from '../AddOrderModal.vue'
 import { supabase } from '@/lib/supabaseClient'

@@ -28,7 +28,7 @@
       "@utils/*": ["./src/utils/*"],
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client", "@vue/runtime-core"],
+    "types": ["vite/client", "@vue/runtime-core", "jest", "node"],
     "incremental": true,
     "disableSizeLimit": true
   },
