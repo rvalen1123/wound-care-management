@@ -1,11 +1,12 @@
 <template>
   <div class="container mx-auto px-4 py-6">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Manufacturer Management</h1>
+      <h1 class="text-2xl font-bold text-gray-800">Manufacturer Management</h1>
       <Button 
         label="Add Manufacturer" 
         icon="pi pi-plus" 
         @click="openManufacturerDialog()"
+        class="p-button-primary"
       />
     </div>
 
@@ -14,26 +15,37 @@
       :value="manufacturers" 
       :paginator="true" 
       :rows="10"
-      class="p-datatable-sm"
+      class="p-datatable-sm shadow-sm rounded-lg bg-white"
+      responsiveLayout="scroll"
+      stripedRows
+      showGridlines
     >
-      <Column field="name" header="Name" sortable />
-      <Column field="default_doctor_discount" header="Default Doctor Discount" sortable>
+      <Column field="name" header="Name" sortable>
         <template #body="{ data }">
-          {{ data.default_doctor_discount }}%
+          <span class="font-medium">{{ data.name }}</span>
         </template>
       </Column>
-      <Column header="Actions">
+      <Column field="default_doctor_discount" header="Default Doctor Discount" sortable>
         <template #body="{ data }">
-          <Button 
-            icon="pi pi-pencil" 
-            class="p-button-text"
-            @click="openManufacturerDialog(data)" 
-          />
-          <Button 
-            icon="pi pi-cog" 
-            class="p-button-text"
-            @click="openCommissionRatesDialog(data)" 
-          />
+          <span class="text-blue-600">{{ data.default_doctor_discount }}%</span>
+        </template>
+      </Column>
+      <Column header="Actions" :exportable="false" style="min-width:8rem">
+        <template #body="{ data }">
+          <div class="flex gap-2">
+            <Button 
+              icon="pi pi-pencil" 
+              class="p-button-text p-button-rounded p-button-info"
+              @click="openManufacturerDialog(data)" 
+              tooltip="Edit"
+            />
+            <Button 
+              icon="pi pi-cog" 
+              class="p-button-text p-button-rounded p-button-secondary"
+              @click="openCommissionRatesDialog(data)" 
+              tooltip="Commission Rates"
+            />
+          </div>
         </template>
       </Column>
     </DataTable>
@@ -43,39 +55,45 @@
       v-model:visible="showManufacturerDialog" 
       :header="dialogMode === 'add' ? 'Add Manufacturer' : 'Edit Manufacturer'"
       modal
+      class="p-fluid w-full md:w-2/3 lg:w-1/2"
     >
-      <div class="p-fluid">
+      <div class="grid grid-cols-1 gap-4 p-4">
         <div class="field">
-          <label for="name">Name</label>
+          <label for="name" class="font-medium mb-2 block text-gray-700">Name</label>
           <InputText 
             id="name" 
             v-model="editingManufacturer.name" 
             required 
+            class="w-full"
           />
         </div>
         <div class="field">
-          <label for="discount">Default Doctor Discount (%)</label>
+          <label for="discount" class="font-medium mb-2 block text-gray-700">Default Doctor Discount (%)</label>
           <InputNumber 
             id="discount" 
             v-model="editingManufacturer.default_doctor_discount" 
             :min="0" 
-            :max="100" 
+            :max="100"
+            class="w-full" 
           />
         </div>
       </div>
       <template #footer>
-        <Button 
-          label="Cancel" 
-          icon="pi pi-times" 
-          @click="showManufacturerDialog = false" 
-          class="p-button-text"
-        />
-        <Button 
-          label="Save" 
-          icon="pi pi-check" 
-          @click="saveManufacturer" 
-          :loading="saving"
-        />
+        <div class="flex justify-end gap-2">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            @click="showManufacturerDialog = false" 
+            class="p-button-text"
+          />
+          <Button 
+            label="Save" 
+            icon="pi pi-check" 
+            @click="saveManufacturer" 
+            :loading="saving"
+            class="p-button-primary"
+          />
+        </div>
       </template>
     </Dialog>
 
@@ -85,15 +103,23 @@
       header="Commission Rates"
       modal
       maximizable
+      class="w-full md:w-3/4 lg:w-2/3"
     >
-      <div class="p-fluid">
+      <div class="p-4">
         <DataTable 
           :value="commissionRates" 
           :paginator="true" 
           :rows="10"
           class="p-datatable-sm"
+          responsiveLayout="scroll"
+          stripedRows
+          showGridlines
         >
-          <Column field="user.name" header="Rep Name" />
+          <Column field="user.name" header="Rep Name">
+            <template #body="{ data }">
+              <span class="font-medium">{{ data.user?.name || '-' }}</span>
+            </template>
+          </Column>
           <Column field="commission_rate" header="Commission Rate">
             <template #body="{ data }">
               <InputNumber 
@@ -101,7 +127,8 @@
                 suffix="%" 
                 :min="0" 
                 :max="100"
-                @change="updateCommissionRate(data)" 
+                @change="updateCommissionRate(data)"
+                class="w-32" 
               />
             </template>
           </Column>

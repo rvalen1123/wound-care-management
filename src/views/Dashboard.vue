@@ -1,162 +1,40 @@
 <template>
-  <div class="dashboard">
-    <!-- Header -->
-    <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <button
-            @click="showAddOrderModal = true"
-            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Add New Order
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <!-- Filters -->
-      <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Doctor</label>
-            <select v-model="filters.doctorId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-              <option value="">All Doctors</option>
-              <option v-for="doctor in doctors" :key="doctor.doctor_id" :value="doctor.doctor_id">
-                {{ doctor.doctor_name }}
-              </option>
-            </select>
-          </div>
+  <div>
+    <div v-if="orders.length">
+      <div v-for="order in filteredOrders" :key="order.order_id">
+        <!-- Add actual order display content -->
+        <div class="order-card">
+          <h3>Order #{{ order.order_id }}</h3>
+          <p>Doctor: {{ getDoctorName(order.doctor_id) }}</p>
+          <p>Product: {{ getProductName(order.product_id) }}</p>
+          <p>Status: <span :class="getStatusClass(order.status)">{{ order.status }}</span></p>
+          <p>Date: {{ formatDate(order.date_of_service) }}</p>
+          <p>Amount: ${{ formatCurrency(order.invoice_amount_billed) }}</p>
           
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Product</label>
-            <select v-model="filters.productId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-              <option value="">All Products</option>
-              <option v-for="product in products" :key="product.id" :value="product.id">
-                {{ product.Product }}
-              </option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Status</label>
-            <select v-model="filters.status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="paid">Paid</option>
-              <option value="partial">Partial</option>
-              <option value="outstanding">Outstanding</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Date Range</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                v-model="filters.dateFrom"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              >
-              <input
-                type="date"
-                v-model="filters.dateTo"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              >
-            </div>
+          <div class="actions">
+            <button @click="viewOrder(order)">View Details</button>
+            <button @click="editOrder(order)">Edit</button>
+            <button 
+              v-if="isAdmin && order.status !== 'approved'" 
+              @click="approveOrder(order)"
+            >
+              Approve
+            </button>
           </div>
         </div>
       </div>
+    </div>
+    <div v-else>
+      Loading...
+    </div>
 
-      <!-- Orders Table -->
-      <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Doctor
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date of Service
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice Amount
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Commission
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="order in filteredOrders" :key="order.order_id">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ getDoctorName(order.doctor_id) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ getProductName(order.product_id) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ formatDate(order.date_of_service) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getStatusClass(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ order.status }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  ${{ formatCurrency(order.invoice_amount_billed) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  ${{ formatCurrency(order.msc_commission) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    @click="viewOrder(order)"
-                    class="text-blue-600 hover:text-blue-900 mr-2"
-                  >
-                    View
-                  </button>
-                  <button
-                    v-if="isAdmin && order.status === 'pending'"
-                    @click="approveOrder(order)"
-                    class="text-green-600 hover:text-green-900 mr-2"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    @click="editOrder(order)"
-                    class="text-indigo-600 hover:text-indigo-900"
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-
-    <!-- Add Order Modal -->
-    <AddOrderModal
+    <!-- Add Modal Components -->
+    <AddOrderModal 
       v-if="showAddOrderModal"
       @close="showAddOrderModal = false"
       @order-added="handleOrderAdded"
     />
 
-    <!-- View/Edit Order Modal -->
     <OrderDetailsModal
       v-if="selectedOrder"
       :order="selectedOrder"
@@ -171,15 +49,37 @@ import { ref, computed, onMounted } from 'vue'
 import { useSupabase } from '@/composables/useSupabase'
 import AddOrderModal from '@/components/orders/AddOrderModal.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
+import type { User } from '@supabase/supabase-js'
+
+// Define interfaces for type safety
+interface Order {
+  order_id: string
+  doctor_id: string
+  product_id: string
+  status: string
+  date_of_service: string
+  invoice_amount_billed: number
+  msc_commission: number
+}
+
+interface Doctor {
+  doctor_id: string
+  doctor_name: string
+}
+
+interface Product {
+  id: string
+  Product: string
+}
 
 const supabase = useSupabase()
 
-// State
-const orders = ref([])
-const doctors = ref([])
-const products = ref([])
+// State with proper typing
+const orders = ref<Order[]>([])
+const doctors = ref<Doctor[]>([])
+const products = ref<Product[]>([])
 const showAddOrderModal = ref(false)
-const selectedOrder = ref(null)
+const selectedOrder = ref<Order | null>(null)
 const isAdmin = ref(false)
 
 const filters = ref({
@@ -190,9 +90,9 @@ const filters = ref({
   dateTo: ''
 })
 
-// Computed
+// Computed with proper typing
 const filteredOrders = computed(() => {
-  return orders.value.filter(order => {
+  return orders.value.filter((order: Order) => {
     if (filters.value.doctorId && order.doctor_id !== filters.value.doctorId) return false
     if (filters.value.productId && order.product_id !== filters.value.productId) return false
     if (filters.value.status && order.status !== filters.value.status) return false
@@ -206,14 +106,14 @@ const filteredOrders = computed(() => {
 const loadOrders = async () => {
   const { data, error } = await supabase
     .from('orders')
-    .select(\`
+    .select(`
       *,
       doctor:doctor_id(doctor_name),
       product:product_id(Product),
       master_rep:master_rep_id(rep_name),
       sub_rep:sub_rep_id(rep_name),
       sub_sub_rep:sub_sub_rep_id(rep_name)
-    \`)
+    `)
     .order('date_of_service', { ascending: false })
 
   if (error) {
@@ -221,7 +121,7 @@ const loadOrders = async () => {
     return
   }
 
-  orders.value = data
+  orders.value = data || []
 }
 
 const loadDoctors = async () => {
@@ -253,7 +153,7 @@ const loadProducts = async () => {
 }
 
 const checkUserRole = async () => {
-  const user = supabase.auth.user()
+  const { data: { user } } = await supabase.auth.getUser()
   if (user?.user_metadata?.role === 'admin') {
     isAdmin.value = true
   }
@@ -295,12 +195,13 @@ const editOrder = (order: any) => {
   selectedOrder.value = { ...order, isEditing: true }
 }
 
-const approveOrder = async (order: any) => {
+const approveOrder = async (order: Order) => {
+  const { data: { user } } = await supabase.auth.getUser()
   const { error } = await supabase
     .from('orders')
     .update({
       status: 'approved',
-      approved_by: supabase.auth.user()?.id,
+      approved_by: user?.id,
       approved_at: new Date().toISOString()
     })
     .eq('order_id', order.order_id)
@@ -325,11 +226,15 @@ const handleOrderUpdated = async () => {
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([
-    loadOrders(),
-    loadDoctors(),
-    loadProducts(),
-    checkUserRole()
-  ])
+  try {
+    await Promise.all([
+      loadOrders(),
+      loadDoctors(),
+      loadProducts(),
+      checkUserRole()
+    ])
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
 })
 </script>
