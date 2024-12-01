@@ -156,11 +156,12 @@ const loadAvailableStructures = async () => {
 
   const { data, error } = await supabase
     .from('commission_structures')
-    .select('*
-      , master_rep:master_rep_id(name)
-      , sub_rep:sub_rep_id(name)
-      , sub_sub_rep:sub_sub_rep_id(name)
-    ')
+    .select(`
+      *,
+      master_rep:master_rep_id(name),
+      sub_rep:sub_rep_id(name),
+      sub_sub_rep:sub_sub_rep_id(name)
+    `)
     .eq('master_rep_id', props.masterRepId)
     .order('created_at', { ascending: false })
 
