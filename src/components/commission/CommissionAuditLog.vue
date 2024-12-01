@@ -31,7 +31,7 @@
                 {{ formatDate(entry.changed_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ entry.changed_by?.name }}
+                {{ entry.changed_by }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <div class="space-y-1">
@@ -64,32 +64,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useCommission } from '@/composables/useCommission'
+import { ref, watch } from 'vue'
+import { useSupabase } from '@/composables/useSupabase'
 import type { CommissionAuditLog } from '@/types/commission'
+import { format } from 'date-fns'
 
-const props = defineProps<{
+interface Props {
   structureId: string
-}>()
-
-// State
-const { loading, error, getCommissionAuditLog } = useCommission()
-const auditLogs = ref<CommissionAuditLog[]>([])
-
-// Methods
-const loadAuditLog = async () => {
-  const data = await getCommissionAuditLog(props.structureId)
-  auditLogs.value = data
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+const props = defineProps<Props>()
+const supabase = useSupabase()
+
+const auditLogs = ref<CommissionAuditLog[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+const loadAuditLog = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const { data, error: logError } = await supabase
+      .from('commission_audit_logs')
+      .select('*')
+      .eq('structure_id', props.structureId)
+      .order('changed_at', { ascending: false })
+    
+    if (logError) throw logError
+    
+    auditLogs.value = data || []
+  } catch (err: any) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const formatDate = (dateString: string): string => {
+  try {
+    return format(new Date(dateString), 'MMM d, yyyy h:mm a')
+  } catch {
+    return dateString
+  }
 }
 
 // Watchers
@@ -99,10 +116,8 @@ watch(() => props.structureId, () => {
   }
 })
 
-// Lifecycle
-onMounted(() => {
-  if (props.structureId) {
-    loadAuditLog()
-  }
-})
+// Initial load
+if (props.structureId) {
+  loadAuditLog()
+}
 </script>

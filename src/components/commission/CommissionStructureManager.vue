@@ -9,7 +9,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
             <label class="block text-sm font-medium text-gray-700">Master Rep</label>
-            <select v-model="structure.masterRepId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <select v-model="structure.master_rep_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
               <option v-for="rep in masterReps" :key="rep.id" :value="rep.id">
                 {{ rep.name }}
               </option>
@@ -18,7 +18,7 @@
           
           <div>
             <label class="block text-sm font-medium text-gray-700">Sub Rep</label>
-            <select v-model="structure.subRepId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <select v-model="structure.sub_rep_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
               <option value="">None</option>
               <option v-for="rep in subReps" :key="rep.id" :value="rep.id">
                 {{ rep.name }}
@@ -28,7 +28,7 @@
           
           <div>
             <label class="block text-sm font-medium text-gray-700">Sub-Sub Rep</label>
-            <select v-model="structure.subSubRepId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <select v-model="structure.sub_sub_rep_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
               <option value="">None</option>
               <option v-for="rep in subSubReps" :key="rep.id" :value="rep.id">
                 {{ rep.name }}
@@ -43,7 +43,7 @@
             <label class="block text-sm font-medium text-gray-700">Master Rep Rate (%)</label>
             <input 
               type="number" 
-              v-model.number="structure.masterRepRate"
+              v-model.number="structure.master_rep_rate"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               min="0"
               max="100"
@@ -55,12 +55,12 @@
             <label class="block text-sm font-medium text-gray-700">Sub Rep Rate (%)</label>
             <input 
               type="number" 
-              v-model.number="structure.subRepRate"
+              v-model.number="structure.sub_rep_rate"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               min="0"
               max="100"
               step="0.01"
-              :disabled="!structure.subRepId"
+              :disabled="!structure.sub_rep_id"
             >
           </div>
           
@@ -68,12 +68,12 @@
             <label class="block text-sm font-medium text-gray-700">Sub-Sub Rep Rate (%)</label>
             <input 
               type="number" 
-              v-model.number="structure.subSubRepRate"
+              v-model.number="structure.sub_sub_rep_rate"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               min="0"
               max="100"
               step="0.01"
-              :disabled="!structure.subSubRepId"
+              :disabled="!structure.sub_sub_rep_id"
             >
           </div>
         </div>
@@ -112,18 +112,18 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200">
+          <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="struct in existingStructures" :key="struct.id">
-              <td class="px-6 py-4 whitespace-nowrap">{{ struct.masterRepName }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ struct.subRepName || '-' }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ struct.subSubRepName || '-' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ struct.master_rep?.name || '-' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ struct.sub_rep?.name || '-' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ struct.sub_sub_rep?.name || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
-                {{ struct.masterRepRate }}% / {{ struct.subRepRate || 0 }}% / {{ struct.subSubRepRate || 0 }}%
+                {{ struct.master_rep_rate }}% / {{ struct.sub_rep_rate || 0 }}% / {{ struct.sub_sub_rep_rate || 0 }}%
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <button 
                   @click="editStructure(struct)"
-                  class="text-blue-600 hover:text-blue-800 mr-2"
+                  class="text-blue-600 hover:text-blue-800"
                 >
                   Edit
                 </button>
@@ -139,122 +139,119 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSupabase } from '@/composables/useSupabase'
+import type { CommissionStructure } from '@/types/commission'
+
+interface Representative {
+  id: string;
+  name: string;
+}
 
 const supabase = useSupabase()
 
-interface CommissionStructure {
-  masterRepId: string
-  subRepId: string | null
-  subSubRepId: string | null
-  masterRepRate: number
-  subRepRate: number | null
-  subSubRepRate: number | null
-}
-
 // State
 const structure = ref<CommissionStructure>({
-  masterRepId: '',
-  subRepId: null,
-  subSubRepId: null,
-  masterRepRate: 100,
-  subRepRate: null,
-  subSubRepRate: null
+  id: '',
+  master_rep_id: '',
+  sub_rep_id: '',
+  sub_sub_rep_id: '',
+  master_rep_rate: 0,
+  sub_rep_rate: 0,
+  sub_sub_rep_rate: 0,
+  created_at: new Date().toISOString()
 })
 
-const masterReps = ref([])
-const subReps = ref([])
-const subSubReps = ref([])
-const existingStructures = ref([])
+const masterReps = ref<Representative[]>([])
+const subReps = ref<Representative[]>([])
+const subSubReps = ref<Representative[]>([])
+const existingStructures = ref<CommissionStructure[]>([])
+const error = ref<string | null>(null)
+const loading = ref(false)
 
 // Computed
 const totalRate = computed(() => {
-  return (structure.value.masterRepRate || 0) +
-         (structure.value.subRepRate || 0) +
-         (structure.value.subSubRepRate || 0)
+  return (structure.value.master_rep_rate || 0) +
+         (structure.value.sub_rep_rate || 0) +
+         (structure.value.sub_sub_rep_rate || 0)
 })
 
 const isValid = computed(() => {
-  return structure.value.masterRepId &&
-         structure.value.masterRepRate > 0 &&
+  return structure.value.master_rep_id &&
+         structure.value.master_rep_rate > 0 &&
          totalRate.value <= 100
 })
 
 // Methods
 const loadReps = async () => {
-  const { data: reps, error } = await supabase
-    .from('users')
-    .select('id, name, user_metadata->role as role')
-    .eq('user_metadata->role', 'rep')
-
-  if (error) {
-    console.error('Error loading reps:', error)
-    return
+  try {
+    const { data: reps, error: repsError } = await supabase
+      .from('representatives')
+      .select('id, name')
+      .eq('role', 'rep')
+    
+    if (repsError) throw repsError
+    
+    masterReps.value = reps || []
+    subReps.value = reps || []
+    subSubReps.value = reps || []
+  } catch (err: any) {
+    error.value = err.message
   }
-
-  masterReps.value = reps
-  subReps.value = reps
-  subSubReps.value = reps
 }
 
 const loadExistingStructures = async () => {
-  const { data, error } = await supabase
-    .from('commission_structures')
-    .select('*, master_rep:master_rep_id(name), sub_rep:sub_rep_id(name), sub_sub_rep:sub_sub_rep_id(name)')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error loading commission structures:', error)
-    return
+  try {
+    const { data: structures, error: structuresError } = await supabase
+      .from('commission_structures')
+      .select(`
+        *,
+        master_rep:representatives!master_rep_id(name),
+        sub_rep:representatives!sub_rep_id(name),
+        sub_sub_rep:representatives!sub_sub_rep_id(name)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (structuresError) throw structuresError
+    
+    existingStructures.value = structures || []
+  } catch (err: any) {
+    error.value = err.message
   }
-
-  existingStructures.value = data.map(struct => ({
-    ...struct,
-    masterRepName: struct.master_rep?.name,
-    subRepName: struct.sub_rep?.name,
-    subSubRepName: struct.sub_sub_rep?.name
-  }))
 }
 
 const saveCommissionStructure = async () => {
-  const { error } = await supabase
-    .from('commission_structures')
-    .insert({
-      master_rep_id: structure.value.masterRepId,
-      sub_rep_id: structure.value.subRepId,
-      sub_sub_rep_id: structure.value.subSubRepId,
-      master_rep_rate: structure.value.masterRepRate,
-      sub_rep_rate: structure.value.subRepRate,
-      sub_sub_rep_rate: structure.value.subSubRepRate,
-      created_by: supabase.auth.user()?.id
-    })
-
-  if (error) {
-    console.error('Error saving commission structure:', error)
-    return
-  }
-
-  // Reset form and reload structures
-  structure.value = {
-    masterRepId: '',
-    subRepId: null,
-    subSubRepId: null,
-    masterRepRate: 100,
-    subRepRate: null,
-    subSubRepRate: null
-  }
+  loading.value = true
+  error.value = null
   
-  await loadExistingStructures()
+  try {
+    const { error: saveError } = await supabase
+      .from('commission_structures')
+      .upsert({
+        ...structure.value,
+        updated_at: new Date().toISOString()
+      })
+    
+    if (saveError) throw saveError
+    
+    await loadExistingStructures()
+    structure.value = {
+      id: '',
+      master_rep_id: '',
+      sub_rep_id: '',
+      sub_sub_rep_id: '',
+      master_rep_rate: 0,
+      sub_rep_rate: 0,
+      sub_sub_rep_rate: 0,
+      created_at: new Date().toISOString()
+    }
+  } catch (err: any) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
 
-const editStructure = (struct: any) => {
-  structure.value = {
-    masterRepId: struct.master_rep_id,
-    subRepId: struct.sub_rep_id,
-    subSubRepId: struct.sub_sub_rep_id,
-    masterRepRate: struct.master_rep_rate,
-    subRepRate: struct.sub_rep_rate,
-    subSubRepRate: struct.sub_sub_rep_rate
-  }
+const editStructure = (struct: CommissionStructure) => {
+  structure.value = { ...struct }
 }
 
 // Lifecycle
