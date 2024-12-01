@@ -194,52 +194,40 @@ export function useCommission(): UseCommissionReturn {
    * Apply commission structure to an order
    */
   const applyCommissionStructureToOrder = async (orderId: string, structureId: string) => {
-    loading.value = true
-    error.value = null
-
     try {
-      // First get the commission structure
-      const { data: structure, error: structureError } = await supabase
+      const { data: structure } = await supabase
         .from('commission_structures')
         .select('*')
         .eq('id', structureId)
-        .single()
+        .single();
 
-      if (structureError) throw structureError
+      if (!structure) throw new Error('Commission structure not found');
 
-      // Then update the order with the structure's rates
       const { data, error: orderError } = await supabase
         .from('orders')
         .update({
-          master_rep_id: structure.masterRepId,
-          sub_rep_id: structure.subRepId ?? null,
-          sub_sub_rep_id: structure.subSubRepId ?? null,
-          master_rep_rate: structure.masterRepRate,
-          sub_rep_rate: structure.subRepRate ?? null,
-          sub_sub_rep_rate: structure.subSubRepRate ?? null,
+          master_rep_id: structure.master_rep_id,
+          sub_rep_id: structure.sub_rep_id ?? null,
+          sub_sub_rep_id: structure.sub_sub_rep_id ?? null,
+          master_rep_rate: structure.master_rep_rate,
+          sub_rep_rate: structure.sub_rep_rate ?? null,
+          sub_sub_rep_rate: structure.sub_sub_rep_rate ?? null,
           updated_by: (await supabase.auth.getUser()).data.user?.id,
-{
-  "scripts": {
-    "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "build": "vue-tsc && vite build",
-    "test": "vitest run"
-  }
-}          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
         .select()
-        .single()
+        .single();
 
-      if (orderError) throw orderError
-      return data
+      if (orderError) throw orderError;
+      return data;
     } catch (err: any) {
-      error.value = err.message
-      return null
+      error.value = err.message;
+      return null;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   return {
     loading,
