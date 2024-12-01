@@ -1,7 +1,8 @@
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 import { useSupabase } from './useSupabase'
 
-interface CommissionStructure {
+export interface CommissionStructure {
   id?: string
   masterRepId: string
   subRepId?: string | null
@@ -15,7 +16,7 @@ interface CommissionStructure {
   updatedAt?: string
 }
 
-interface CommissionBreakdown {
+export interface CommissionBreakdown {
   totalCommission: number
   masterRepCommission: number
   subRepCommission: number
@@ -27,7 +28,7 @@ export interface UseCommissionReturn {
   error: Ref<string | null>
   createCommissionStructure: (structure: CommissionStructure) => Promise<any>
   updateCommissionStructure: (id: string, structure: Partial<CommissionStructure>) => Promise<any>
-  getCommissionStructures: (masterRepId: string) => Promise<any[]>
+  getCommissionStructures: (masterRepId: string) => Promise<CommissionStructure[]>
   calculateCommissionBreakdown: (
     totalCommission: number,
     masterRepRate: number,
@@ -55,12 +56,12 @@ export function useCommission(): UseCommissionReturn {
         .from('commission_structures')
         .insert({
           master_rep_id: structure.masterRepId,
-          sub_rep_id: structure.subRepId,
-          sub_sub_rep_id: structure.subSubRepId,
+          sub_rep_id: structure.subRepId ?? null,
+          sub_sub_rep_id: structure.subSubRepId ?? null,
           master_rep_rate: structure.masterRepRate,
-          sub_rep_rate: structure.subRepRate,
-          sub_sub_rep_rate: structure.subSubRepRate,
-          created_by: supabase.auth.user()?.id
+          sub_rep_rate: structure.subRepRate ?? null,
+          sub_sub_rep_rate: structure.subSubRepRate ?? null,
+          created_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
         .single()
@@ -87,12 +88,12 @@ export function useCommission(): UseCommissionReturn {
         .from('commission_structures')
         .update({
           master_rep_id: structure.masterRepId,
-          sub_rep_id: structure.subRepId,
-          sub_sub_rep_id: structure.subSubRepId,
+          sub_rep_id: structure.subRepId ?? null,
+          sub_sub_rep_id: structure.subSubRepId ?? null,
           master_rep_rate: structure.masterRepRate,
-          sub_rep_rate: structure.subRepRate,
-          sub_sub_rep_rate: structure.subSubRepRate,
-          updated_by: supabase.auth.user()?.id,
+          sub_rep_rate: structure.subRepRate ?? null,
+          sub_sub_rep_rate: structure.subSubRepRate ?? null,
+          updated_by: (await supabase.auth.getUser()).data.user?.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -112,29 +113,32 @@ export function useCommission(): UseCommissionReturn {
   /**
    * Get commission structures for a master rep
    */
-  const getCommissionStructures = async (masterRepId: string) => {
-    loading.value = true
-    error.value = null
-
+  const getCommissionStructures = async (masterRepId: string): Promise<CommissionStructure[]> => {
     try {
       const { data, error: err } = await supabase
         .from('commission_structures')
-        .select(\`
-          *,
-          master_rep:master_rep_id(id, name),
-          sub_rep:sub_rep_id(id, name),
-          sub_sub_rep:sub_sub_rep_id(id, name)
-        \`)
+        .select('*, master_rep:master_rep_id(id, name), sub_rep:sub_rep_id(id, name), sub_sub_rep:sub_sub_rep_id(id, name)')
         .eq('master_rep_id', masterRepId)
         .order('created_at', { ascending: false })
 
       if (err) throw err
-      return data
+
+      return data?.map(item => ({
+        id: item.id,
+        masterRepId: item.master_rep_id,
+        subRepId: item.sub_rep_id,
+        subSubRepId: item.sub_sub_rep_id,
+        masterRepRate: item.master_rep_rate,
+        subRepRate: item.sub_rep_rate,
+        subSubRepRate: item.sub_sub_rep_rate,
+        createdBy: item.created_by,
+        createdAt: item.created_at,
+        updatedBy: item.updated_by,
+        updatedAt: item.updated_at
+      })) || []
     } catch (err: any) {
       error.value = err.message
       return []
-    } finally {
-      loading.value = false
     }
   }
 
@@ -169,10 +173,10 @@ export function useCommission(): UseCommissionReturn {
     try {
       const { data, error: err } = await supabase
         .from('commission_structure_audit')
-        .select(\`
-          *,
+        .select(`
+          *
           changed_by:changed_by(id, name)
-        \`)
+        `)
         .eq('commission_structure_id', structureId)
         .order('changed_at', { ascending: false })
 
@@ -207,13 +211,13 @@ export function useCommission(): UseCommissionReturn {
       const { data, error: orderError } = await supabase
         .from('orders')
         .update({
-          master_rep_id: structure.master_rep_id,
-          sub_rep_id: structure.sub_rep_id,
-          sub_sub_rep_id: structure.sub_sub_rep_id,
-          master_rep_rate: structure.master_rep_rate,
-          sub_rep_rate: structure.sub_rep_rate,
-          sub_sub_rep_rate: structure.sub_sub_rep_rate,
-          updated_by: supabase.auth.user()?.id,
+          master_rep_id: structure.masterRepId,
+          sub_rep_id: structure.subRepId ?? null,
+          sub_sub_rep_id: structure.subSubRepId ?? null,
+          master_rep_rate: structure.masterRepRate,
+          sub_rep_rate: structure.subRepRate ?? null,
+          sub_sub_rep_rate: structure.subSubRepRate ?? null,
+          updated_by: (await supabase.auth.getUser()).data.user?.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
@@ -240,4 +244,4 @@ export function useCommission(): UseCommissionReturn {
     getCommissionAuditLog,
     applyCommissionStructureToOrder
   }
-} 
+}

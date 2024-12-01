@@ -199,12 +199,7 @@ const loadReps = async () => {
 const loadExistingStructures = async () => {
   const { data, error } = await supabase
     .from('commission_structures')
-    .select(\`
-      *,
-      master_rep:master_rep_id(name),
-      sub_rep:sub_rep_id(name),
-      sub_sub_rep:sub_sub_rep_id(name)
-    \`)
+    .select('*, master_rep:master_rep_id(name), sub_rep:sub_rep_id(name), sub_sub_rep:sub_sub_rep_id(name)')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -269,4 +264,4 @@ onMounted(async () => {
     loadExistingStructures()
   ])
 })
-</script> 
+</script>

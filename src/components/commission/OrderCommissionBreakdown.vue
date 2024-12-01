@@ -62,8 +62,8 @@
             :value="structure.id"
           >
             {{ structure.masterRepName }} 
-            {{ structure.subRepName ? \` / \${structure.subRepName}\` : '' }}
-            {{ structure.subSubRepName ? \` / \${structure.subSubRepName}\` : '' }}
+            {{ structure.subRepName ? ` / ${structure.subRepName}` : '' }}
+            {{ structure.subSubRepName ? ` / ${structure.subSubRepName}` : '' }}
             ({{ structure.masterRepRate }}% / {{ structure.subRepRate || 0 }}% / {{ structure.subSubRepRate || 0 }}%)
           </option>
         </select>
@@ -156,12 +156,11 @@ const loadAvailableStructures = async () => {
 
   const { data, error } = await supabase
     .from('commission_structures')
-    .select(\`
-      *,
-      master_rep:master_rep_id(name),
-      sub_rep:sub_rep_id(name),
-      sub_sub_rep:sub_sub_rep_id(name)
-    \`)
+    .select('*
+      , master_rep:master_rep_id(name)
+      , sub_rep:sub_rep_id(name)
+      , sub_sub_rep:sub_sub_rep_id(name)
+    ')
     .eq('master_rep_id', props.masterRepId)
     .order('created_at', { ascending: false })
 

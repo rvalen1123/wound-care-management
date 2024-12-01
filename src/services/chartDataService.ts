@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { Order } from '@/types'
 
-interface ChartData {
+export interface ChartData {
   labels: string[]
   datasets: {
     label: string
