@@ -125,117 +125,86 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { format } from 'date-fns';
-import { OrderAnalytics } from '@/models/analytics/OrderAnalytics';
-import { supabase } from '@/config/supabase';
+import { ref, computed, onMounted } from 'vue'
+import { chartDataService } from '@/services/chartDataService'
+import { format } from 'date-fns'
 
-const analytics = ref<OrderAnalytics>({
-  totalSalesRevenue: 0,
-  outstandingBalances: [],
-  totalAccountsReceivable: 0,
-  manufacturerPayables: [],
-  totalManufacturerPayables: 0,
-  commissionPayables: [],
-  totalCommissionPayables: 0,
-  paymentMetrics: {
-    averageDaysToPayment: 0,
-    paymentTrends: []
-  },
-  averageOrderValue: 0,
+const analytics = ref({
   orderValueTrends: [],
-  productPerformance: []
-});
+  productPerformance: [],
+  repPerformance: []
+})
 
-const dateRange = ref<[Date, Date] | null>(null);
-
-const productFields = [
-  { key: 'productName', label: 'Product' },
-  { key: 'unitsSold', label: 'Units Sold' },
-  { key: 'revenue', label: 'Revenue' },
-  { key: 'turnoverRate', label: 'Monthly Turnover' }
-];
-
-const balanceFields = [
-  { key: 'doctorName', label: 'Doctor' },
-  { key: 'amount', label: 'Outstanding Amount' }
-];
-
-const lineChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: {
-      beginAtZero: true
-    }
-  }
-};
+const dateRange = ref([new Date(), new Date()])
 
 const orderValueChartData = computed(() => ({
   labels: analytics.value.orderValueTrends.map(t => format(t.date, 'MMM d, yyyy')),
   datasets: [{
     label: 'Order Value',
     data: analytics.value.orderValueTrends.map(t => t.value),
-    borderColor: '#667eea',
-    tension: 0.4
+    backgroundColor: '#4F46E5',
+    borderColor: '#4338CA',
+    borderWidth: 1
   }]
-}));
+}))
 
-const paymentCycleChartData = computed(() => ({
-  labels: analytics.value.paymentMetrics.paymentTrends.map(t => format(t.date, 'MMM d, yyyy')),
-  datasets: [{
-    label: 'Days to Payment',
-    data: analytics.value.paymentMetrics.paymentTrends.map(t => t.daysToPayment),
-    borderColor: '#764ba2',
-    tension: 0.4
-  }]
-}));
-
-async function fetchAnalytics() {
+const fetchAnalytics = async () => {
   try {
-    let url = '/api/admin/analytics';
-    if (dateRange.value) {
-      const [start, end] = dateRange.value;
-      url += `?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+    const [ordersByMonth, ordersByProduct, commissionsByRep] = await Promise.all([
+      chartDataService.getOrdersByMonth(),
+      chartDataService.getOrdersByProduct(),
+      chartDataService.getCommissionsByRep()
+    ])
+
+    analytics.value = {
+      orderValueTrends: ordersByMonth.datasets[0].data.map((value, index) => ({
+        date: new Date(ordersByMonth.labels[index]),
+        value
+      })),
+      productPerformance: ordersByProduct.datasets[0].data.map((value, index) => ({
+        name: ordersByProduct.labels[index],
+        value
+      })),
+      repPerformance: commissionsByRep.datasets[0].data.map((value, index) => ({
+        name: commissionsByRep.labels[index],
+        value
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching analytics:', error)
+  }
+}
+
+const exportAnalytics = async () => {
+  try {
+    const data = {
+      orderValueTrends: analytics.value.orderValueTrends,
+      productPerformance: analytics.value.productPerformance,
+      repPerformance: analytics.value.repPerformance
     }
 
-    const { data } = await supabase.get(url);
-    analytics.value = data;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `analytics-${format(new Date(), 'yyyy-MM-dd')}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Failed to fetch analytics:', error);
+    console.error('Error exporting analytics:', error)
   }
 }
 
-async function exportAnalytics() {
-  try {
-    const response = await fetch('/api/admin/analytics/export', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `analytics-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error('Failed to export analytics:', error);
-  }
-}
-
-function formatNumber(value: number): string {
+const formatNumber = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+    style: 'currency',
+    currency: 'USD'
+  }).format(value)
 }
 
-onMounted(fetchAnalytics);
+onMounted(fetchAnalytics)
 </script>
 
 <style lang="scss" scoped>

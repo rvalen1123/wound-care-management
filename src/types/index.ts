@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export interface Manufacturer {
   id?: string;
@@ -41,7 +41,7 @@ export interface AuditLogEntry {
   id: string;
   changed_at: string;
   changed_by: string;
-  changed_by_user?: User;
+  changed_by_user?: SupabaseUser;
   commission_structure_id: number;
   action: 'insert' | 'update' | 'delete';
   previous_master_rate: number;
@@ -51,4 +51,24 @@ export interface AuditLogEntry {
   new_sub_rate: number;
   new_sub_sub_rate: number;
   reason?: string;
-} 
+}
+
+export * from './models'
+
+export interface User {
+  id: string
+  email: string
+  role: 'admin' | 'rep' | 'user'
+  created_at: string
+}
+
+export interface AuthResponse {
+  user: User | null
+  error: Error | null
+}
+
+export interface TableState {
+  loading: boolean
+  error: string | null
+  data: any[]
+}

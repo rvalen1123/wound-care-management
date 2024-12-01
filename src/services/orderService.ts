@@ -3,24 +3,33 @@ import type { Order, OrderCalculations, Product } from '@/types/models'
 
 export const orderService = {
   calculateUnits(size: string): number {
-    // Add logic to calculate units based on size
-    // This is a placeholder implementation
     const [width, height] = size.split('x').map(Number)
+    if (isNaN(width) || isNaN(height)) {
+      throw new Error('Invalid size format. Expected format: widthxheight')
+    }
     return width * height
   },
 
   calculateInvoiceAmount(product: Product): number {
-    // Default doctor discount is 40% (they pay 60% of ASP)
+    if (!product.national_asp) {
+      throw new Error('Product ASP is required')
+    }
     return product.national_asp * 0.6
   },
 
   calculateExpectedCollectionDate(dateOfService: string): string {
     const date = new Date(dateOfService)
-    date.setDate(date.getDate() + 60) // Default net 60 terms
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date format')
+    }
+    date.setDate(date.getDate() + 60)
     return date.toISOString()
   },
 
   calculateMscCommission(invoiceAmount: number, product: Product): number {
+    if (!product.default_commission_rate) {
+      throw new Error('Product default commission rate is required')
+    }
     return invoiceAmount * (product.default_commission_rate / 100)
   },
 
@@ -28,116 +37,110 @@ export const orderService = {
     productId: string,
     size: string,
     dateOfService: string
-  ): Promise<OrderCalculations | null> {
-    try {
-      // Get product details
-      const { data: product, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', productId)
-        .single()
+  ): Promise<OrderCalculations> {
+    const { data: productData, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .single()
 
-      if (error || !product) {
-        console.error('Error fetching product:', error)
-        return null
-      }
+    if (error || !productData) {
+      throw new Error('Failed to fetch product details')
+    }
 
-      const units = this.calculateUnits(size)
-      const invoiceAmount = this.calculateInvoiceAmount(product)
-      const expectedCollectionDate = this.calculateExpectedCollectionDate(dateOfService)
-      const mscCommission = this.calculateMscCommission(invoiceAmount, product)
+    const product: Product = {
+      id: productData.id,
+      name: productData.name,
+      manufacturer: productData.manufacturer,
+      national_asp: productData.national_asp,
+      sizes: productData.sizes,
+      default_commission_rate: productData.default_commission_rate,
+      created_at: productData.created_at,
+      updated_at: productData.updated_at
+    }
 
-      // This would need to be expanded to calculate rep commissions
-      // based on the rep hierarchy and their commission rates
-      const repCommissions = []
+    const units = this.calculateUnits(size)
+    const invoiceAmount = this.calculateInvoiceAmount(product)
+    const expectedCollectionDate = this.calculateExpectedCollectionDate(dateOfService)
+    const mscCommission = this.calculateMscCommission(invoiceAmount, product)
 
-      return {
-        units,
-        invoiceAmount,
-        expectedCollectionDate,
-        mscCommission,
-        repCommissions
-      }
-    } catch (error) {
-      console.error('Error calculating order values:', error)
-      return null
+    return {
+      units,
+      invoiceAmount,
+      expectedCollectionDate,
+      mscCommission,
+      product
     }
   },
 
-  async createOrder(orderData: Partial<Order>): Promise<{ data: Order | null; error: any }> {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .select('*, doctor(*), product(*)')
-        .single()
+  async getOrders(filters: Partial<Order> = {}): Promise<Order[]> {
+    let query = supabase.from('orders').select('*')
 
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) {
+        query = query.eq(key, value)
+      }
+    })
+
+    const { data, error } = await query
+
+    if (error) {
+      throw new Error(`Failed to fetch orders: ${error.message}`)
     }
+
+    return data || []
+  },
+
+  async createOrder(orderData: Partial<Order>): Promise<Order> {
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([orderData])
+      .select()
+      .single()
+
+    if (error || !data) {
+      throw new Error(`Failed to create order: ${error?.message}`)
+    }
+
+    return data
   },
 
   async updateOrder(
-    orderId: string,
-    orderData: Partial<Order>
-  ): Promise<{ data: Order | null; error: any }> {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .update(orderData)
-        .eq('id', orderId)
-        .select('*, doctor(*), product(*)')
-        .single()
+    id: number,
+    updates: Partial<Order>
+  ): Promise<Order> {
+    const { data, error } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
 
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
+    if (error || !data) {
+      throw new Error(`Failed to update order: ${error?.message}`)
+    }
+
+    return data
+  },
+
+  async deleteOrder(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      throw new Error(`Failed to delete order: ${error.message}`)
     }
   },
 
-  async getOrderById(orderId: string): Promise<{ data: Order | null; error: any }> {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, doctor(*), product(*)')
-        .eq('id', orderId)
-        .single()
-
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
+  async approveOrder(id: number, userId: string): Promise<Order> {
+    const updates = {
+      status: 'approved',
+      approved_by: userId,
+      approved_at: new Date().toISOString()
     }
-  },
 
-  async getOrders(filters: any = {}): Promise<{ data: Order[] | null; error: any }> {
-    try {
-      let query = supabase
-        .from('orders')
-        .select('*, doctor(*), product(*)')
-
-      // Apply filters
-      if (filters.doctorId) {
-        query = query.eq('doctor_id', filters.doctorId)
-      }
-      if (filters.productId) {
-        query = query.eq('product_id', filters.productId)
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status)
-      }
-      if (filters.dateFrom) {
-        query = query.gte('date_of_service', filters.dateFrom)
-      }
-      if (filters.dateTo) {
-        query = query.lte('date_of_service', filters.dateTo)
-      }
-
-      const { data, error } = await query
-
-      return { data, error }
-    } catch (error) {
-      return { data: null, error }
-    }
+    return this.updateOrder(id, updates)
   }
 }

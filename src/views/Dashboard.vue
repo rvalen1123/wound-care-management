@@ -104,7 +104,7 @@
               {{ order.product?.name }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              {{ formatDate(order.date_of_service) }}
+              {{ new Date(order.date_of_service).toLocaleDateString() }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span :class="getStatusClass(order.status)">
@@ -162,35 +162,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSupabase } from '@/composables/useSupabase'
+import type { Order, Doctor, Product } from '@/types/models'
+import { orderService } from '@/services/orderService'
 import AddOrderModal from '@/components/orders/AddOrderModal.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
-import type { User } from '@supabase/supabase-js'
-
-// Define interfaces for type safety
-interface Order {
-  id: string
-  doctor: {
-    id: string
-    name: string
-  }
-  product: {
-    id: string
-    name: string
-  }
-  status: string
-  date_of_service: string
-  invoice_to_doc: number
-}
-
-interface Doctor {
-  id: string
-  name: string
-}
-
-interface Product {
-  id: string
-  name: string
-}
+import { formatCurrency } from '@/utils/formatters'
 
 const supabase = useSupabase()
 
@@ -224,21 +200,11 @@ const filteredOrders = computed(() => {
 
 // Methods
 const loadOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      doctor:doctor_id(id, name),
-      product:product_id(id, name)
-    `)
-    .order('date_of_service', { ascending: false })
-
-  if (error) {
+  try {
+    orders.value = await orderService.getOrders()
+  } catch (error) {
     console.error('Error loading orders:', error)
-    return
   }
-
-  orders.value = data || []
 }
 
 const loadDoctors = async () => {
@@ -282,21 +248,15 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString()
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
-
-const getStatusClass = (status: string) => {
-  return {
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'approved': 'bg-green-100 text-green-800',
-    'paid': 'bg-blue-100 text-blue-800',
-    'partial': 'bg-orange-100 text-orange-800',
-    'outstanding': 'bg-red-100 text-red-800'
-  }[status] || 'bg-gray-100 text-gray-800'
+const getStatusClass = (status: string): string => {
+  const classes = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    approved: 'bg-green-100 text-green-800',
+    paid: 'bg-blue-100 text-blue-800',
+    partial: 'bg-orange-100 text-orange-800',
+    outstanding: 'bg-red-100 text-red-800'
+  }
+  return classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'
 }
 
 const viewOrder = (order: Order) => {

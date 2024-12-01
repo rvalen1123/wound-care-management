@@ -1,110 +1,104 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <div class="flex justify-center mb-8">
-        <img 
-          src="/msc-logo.png" 
-          alt="MSC Wound Care Logo" 
-          class="h-16 w-auto"
-        />
+  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <div>
+        <img class="mx-auto h-12 w-auto" src="@/assets/logo.png" alt="Logo">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
       </div>
-      
-      <form @submit.prevent="handleEmailLogin" class="space-y-4 mb-6">
-        <div>
-          <label class="block text-sm font-medium text-[#003087]">Email</label>
-          <input
-            v-model.trim="email"
-            type="email"
-            required
-            autocomplete="username"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
-          />
+      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
+        <div class="rounded-md shadow-sm -space-y-px">
+          <div>
+            <label for="email-address" class="sr-only">Email address</label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              required
+              v-model="email"
+              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              placeholder="Email address"
+            >
+          </div>
+          <div>
+            <label for="password" class="sr-only">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              v-model="password"
+              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              placeholder="Password"
+            >
+          </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-[#003087]">Password</label>
-          <input
-            v-model="password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#003087] focus:border-[#003087]"
-          />
-        </div>
-
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#003087] hover:bg-[#002266] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003087] disabled:opacity-50"
-        >
-          {{ loading ? 'Signing in...' : 'Sign in' }}
-        </button>
-
-        <div 
-          v-if="error"
-          class="p-4 bg-red-50 text-[#E31837] rounded text-sm"
-        >
+        <div v-if="error" class="text-red-600 text-sm text-center">
           {{ error }}
         </div>
-      </form>
 
-      <!-- Add the test component -->
-      <div class="mt-8 pt-8 border-t">
-        <TestSupabase />
-      </div>
+        <div>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <svg
+                class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+            {{ loading ? 'Signing in...' : 'Sign in' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, watch } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import TestSupabase from '@/components/TestSupabase.vue'
+import { authService } from '@/services/auth.service'
 
 const router = useRouter()
-const authStore = useAuthStore()
-
 const email = ref('')
 const password = ref('')
-const error = ref('')
+const error = ref<string | null>(null)
 const loading = ref(false)
 
-async function handleEmailLogin() {
+const handleSubmit = async () => {
+  loading.value = true
+  error.value = null
+
   try {
-    loading.value = true
-    error.value = ''
-
-    console.log('Starting login process...')
-    const { data, error: loginError } = await authStore.login({
-      email: email.value,
-      password: password.value
-    })
-
-    console.log('Login response in component:', { data, error: loginError })
-
-    if (loginError) {
-      throw loginError
+    const { user, error: authError } = await authService.signIn(email.value, password.value)
+    
+    if (authError) {
+      error.value = authError.message
+      return
     }
 
-    if (!authStore.isAuthenticated) {
-      throw new Error('Login succeeded but authentication state not set')
+    if (user) {
+      router.push('/dashboard')
     }
-
-    console.log('Login successful, redirecting to dashboard...')
-    router.push('/dashboard')
   } catch (err) {
-    error.value = err.message || 'Failed to sign in'
-    console.error('Login error in component:', err)
+    error.value = 'An error occurred during sign in'
+    console.error('Sign in error:', err)
   } finally {
     loading.value = false
   }
 }
-
-// Watch for authentication state changes
-watch(() => authStore.isAuthenticated, (newValue) => {
-  if (newValue) {
-    router.push('/dashboard')
-  }
-})
 </script>

@@ -23,6 +23,15 @@
     },
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.js", "src/**/*.jsx", "src/shims-vue.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "src/shims-vue.d.ts",
+    "src/env.d.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
-} 
+}

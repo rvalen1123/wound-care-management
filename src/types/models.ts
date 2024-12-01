@@ -20,23 +20,23 @@ export interface Product {
 }
 
 export interface Order {
-  id: string
-  doctor_id: string
+  id: number
+  doctor_id: number
+  product_id: number
   date_of_service: string
-  product_id: string
   size: string
   units: number
   invoice_to_doc: number
   expected_collection_date: string
-  status: 'pending' | 'approved' | 'paid' | 'partial' | 'outstanding'
   msc_commission: number
+  status: 'pending' | 'approved' | 'rejected'
   approved_by?: string
   approved_at?: string
-  created_at?: string
-  updated_at?: string
+  isEditing?: boolean
+  created_at: string
+  updated_at: string
   doctor?: Doctor
   product?: Product
-  isEditing?: boolean
 }
 
 export interface Rep {
@@ -119,8 +119,9 @@ export interface OrderCalculations {
   invoiceAmount: number
   expectedCollectionDate: string
   mscCommission: number
-  repCommissions: {
+  product: Product
+  repCommissions?: Array<{
     repId: string
     amount: number
-  }[]
+  }>
 }

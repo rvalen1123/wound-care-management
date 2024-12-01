@@ -4,17 +4,25 @@
       <div class="p-6">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-semibold">
-            {{ order.isEditing ? 'Edit Order' : 'Order Details' }}
+            {{ order.isEditing ? 'Edit Order' : 'Quick View Order Details' }}
           </h2>
-          <button 
-            @click="$emit('close')"
-            class="text-gray-400 hover:text-gray-500"
-          >
-            <span class="sr-only">Close</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="flex gap-2">
+            <router-link 
+              :to="{ name: 'OrderDetails', params: { id: order.id }}" 
+              class="text-indigo-600 hover:text-indigo-800"
+            >
+              View Full Details
+            </router-link>
+            <button 
+              @click="$emit('close')"
+              class="text-gray-400 hover:text-gray-500"
+            >
+              <span class="sr-only">Close</span>
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="space-y-6">
@@ -56,107 +64,81 @@
             </div>
 
             <div>
+              <label class="block text-sm font-medium text-gray-700">Invoice Amount</label>
+              <div class="mt-1">
+                {{ formatCurrency(order.invoice_to_doc) }}
+              </div>
+            </div>
+
+            <div>
               <label class="block text-sm font-medium text-gray-700">Expected Collection</label>
               <div class="mt-1">
                 {{ formatDate(order.expected_collection_date) }}
               </div>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Status</label>
+              <div class="mt-1">
+                <span 
+                  :class="{
+                    'px-2 py-1 text-sm rounded-full': true,
+                    'bg-yellow-100 text-yellow-800': order.status === 'pending',
+                    'bg-green-100 text-green-800': order.status === 'approved',
+                    'bg-red-100 text-red-800': order.status === 'rejected'
+                  }"
+                >
+                  {{ order.status.charAt(0).toUpperCase() + order.status.slice(1) }}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <!-- Financial Information -->
-          <div class="bg-gray-50 p-4 rounded-lg space-y-4">
-            <div class="grid grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Invoice Amount</label>
-                <div class="mt-1" v-if="!order.isEditing">
-                  {{ formatCurrency(order.invoice_to_doc) }}
-                </div>
-                <input
-                  v-else
-                  type="number"
-                  v-model="editForm.invoice_to_doc"
-                  step="0.01"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">MSC Commission</label>
-                <div class="mt-1" v-if="!order.isEditing">
+          <!-- Quick Summary -->
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Quick Summary</h3>
+            <dl class="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">MSC Commission</dt>
+                <dd class="mt-1 text-lg font-semibold text-gray-900">
                   {{ formatCurrency(order.msc_commission) }}
-                </div>
-                <input
-                  v-else
-                  type="number"
-                  v-model="editForm.msc_commission"
-                  step="0.01"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                >
+                </dd>
               </div>
-            </div>
-
-            <!-- Payment Tracking -->
-            <div v-if="payment" class="mt-4">
-              <h3 class="text-lg font-medium text-gray-900 mb-3">Payment Status</h3>
-              <div class="grid grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700">Manufacturer Paid</label>
-                  <div class="mt-1">
-                    {{ formatCurrency(payment.manufacturer_paid) }}
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700">Remaining Balance</label>
-                  <div class="mt-1">
-                    {{ formatCurrency(payment.remaining_balance) }}
-                  </div>
-                </div>
+              <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">Payment Status</dt>
+                <dd class="mt-1 text-lg font-semibold text-gray-900">
+                  {{ payment ? 'Paid' : 'Pending' }}
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          <!-- Commission Breakdown -->
-          <div v-if="commissions.length" class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">Commission Breakdown</h3>
-            <div class="space-y-3">
-              <div v-for="commission in commissions" :key="commission.id" class="flex justify-between items-center">
-                <div>
-                  <span class="font-medium">{{ commission.rep?.name }}</span>
-                  <span class="text-sm text-gray-500">({{ commission.rep?.role }})</span>
-                </div>
-                <div>
-                  {{ formatCurrency(commission.commission_amount) }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions -->
+          <!-- Action Buttons -->
           <div class="flex justify-end space-x-4 pt-4 border-t">
             <button 
               v-if="!order.isEditing"
               type="button"
               @click="startEditing"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Edit Order
+              Edit
             </button>
-            <template v-else>
-              <button 
-                type="button"
-                @click="cancelEditing"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button 
-                type="button"
-                @click="saveChanges"
-                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
-            </template>
+            <button
+              v-if="order.isEditing"
+              type="button"
+              @click="cancelEditing"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Cancel
+            </button>
+            <button
+              v-if="order.isEditing"
+              type="button"
+              @click="saveChanges"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Save Changes
+            </button>
           </div>
         </div>
       </div>
@@ -166,82 +148,78 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabaseClient'
 import type { Order, Payment, Commission } from '@/types/models'
 import { orderService } from '@/services/orderService'
-import { supabase } from '@/lib/supabaseClient'
 
 const props = defineProps<{
   order: Order
-  isAdmin: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'order-updated'): void
+  (e: 'update', order: Order): void
 }>()
 
 const payment = ref<Payment | null>(null)
 const commissions = ref<Commission[]>([])
-const editForm = ref({
-  invoice_to_doc: props.order.invoice_to_doc,
-  msc_commission: props.order.msc_commission
-})
 
 const loadPayment = async () => {
-  const { data, error } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('order_id', props.order.id)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('order_id', props.order.id)
+      .single();
 
-  if (error) {
-    console.error('Error loading payment:', error)
-    return
+    if (error) {
+      console.error('Error loading payment:', error.message);
+      return null;
+    }
+    
+    payment.value = data;
+    return data;
+  } catch (error) {
+    console.error('Error loading payment:', error);
+    return null;
   }
-
-  payment.value = data
 }
 
 const loadCommissions = async () => {
-  const { data, error } = await supabase
-    .from('commissions')
-    .select('*, rep(*)')
-    .eq('order_id', props.order.id)
+  try {
+    const { data, error } = await supabase
+      .from('commissions')
+      .select('*')
+      .eq('order_id', props.order.id);
 
-  if (error) {
-    console.error('Error loading commissions:', error)
-    return
+    if (error) {
+      console.error('Error loading commissions:', error.message);
+      return [];
+    }
+    
+    commissions.value = data;
+    return data;
+  } catch (error) {
+    console.error('Error loading commissions:', error);
+    return [];
   }
-
-  commissions.value = data
 }
 
 const startEditing = () => {
-  editForm.value = {
-    invoice_to_doc: props.order.invoice_to_doc,
-    msc_commission: props.order.msc_commission
-  }
+  emit('update', { ...props.order, isEditing: true })
 }
 
 const cancelEditing = () => {
-  emit('order-updated')
+  emit('update', { ...props.order, isEditing: false })
 }
 
 const saveChanges = async () => {
   try {
-    const { error } = await orderService.updateOrder(props.order.id, {
-      invoice_to_doc: editForm.value.invoice_to_doc,
-      msc_commission: editForm.value.msc_commission
-    })
-
-    if (error) {
-      console.error('Error updating order:', error)
-      return
-    }
-
-    emit('order-updated')
+    const updatedOrder = await orderService.updateOrder(props.order.id, props.order)
+    emit('update', { ...updatedOrder, isEditing: false })
   } catch (error) {
     console.error('Error saving changes:', error)
+    // TODO: Add error notification
   }
 }
 
@@ -253,7 +231,11 @@ const formatCurrency = (amount: number) => {
 }
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString()
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 }
 
 onMounted(async () => {

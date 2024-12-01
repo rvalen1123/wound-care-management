@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
+// Views
 import DashboardView from '@/views/Dashboard.vue'
 import GraftOrderManagement from '@/views/GraftOrderManagement.vue'
 import CustomerManagement from '@/views/CustomerManagement.vue'
@@ -13,7 +16,7 @@ import ManufacturerManagement from '@/views/ManufacturerManagement.vue'
 import OrderForm from '@/views/OrderForm.vue'
 import CommissionStructureManagement from '@/views/CommissionStructureManagement.vue'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/',
     redirect: '/login'
@@ -21,12 +24,14 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { requiresAuth: false }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { requiresAuth: false }
   },
   {
     path: '/dashboard',
@@ -35,91 +40,86 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/graft-orders',
-    name: 'GraftOrders',
+    path: '/graft-order-management',
+    name: 'GraftOrderManagement',
     component: GraftOrderManagement,
     meta: { requiresAuth: true }
   },
   {
-    path: '/graft-orders/:id',
-    name: 'OrderDetails',
-    component: OrderDetails,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/customers',
-    name: 'Customers',
+    path: '/customer-management',
+    name: 'CustomerManagement',
     component: CustomerManagement,
     meta: { requiresAuth: true }
   },
   {
-    path: '/customers/:id',
+    path: '/customer/:id',
     name: 'CustomerProfile',
     component: CustomerProfile,
     meta: { requiresAuth: true }
   },
   {
-    path: '/financial-reports',
-    name: 'FinancialReports',
+    path: '/financial-reporting',
+    name: 'FinancialReporting',
     component: FinancialReporting,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/payments',
-    name: 'Payments',
+    path: '/payment-tracking',
+    name: 'PaymentTracking',
     component: PaymentTracking,
     meta: { requiresAuth: true }
   },
   {
-    path: '/manufacturers',
-    name: 'Manufacturers',
+    path: '/order/:id',
+    name: 'OrderDetails',
+    component: OrderDetails,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/order-form',
+    name: 'OrderForm',
+    component: OrderForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/manufacturer-management',
+    name: 'ManufacturerManagement',
     component: ManufacturerManagement,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/orders/new',
-    name: 'CreateOrder',
-    component: OrderForm,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/orders/:id/edit',
-    name: 'EditOrder',
-    component: OrderForm,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/commission-structures',
-    name: 'CommissionStructures',
+    path: '/commission-structure',
+    name: 'CommissionStructureManagement',
     component: CommissionStructureManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(),
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) => {
   const authStore = useAuthStore()
-  
-  // If route requires auth and user is not authenticated
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!authStore.isAuthenticated) {
-      next({ name: 'Login' })
-    } else {
-      next()
-    }
-  } 
-  // If going to login/register while already authenticated
-  else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    next({ name: 'Dashboard' })
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+    return
   }
-  // All other routes
-  else {
-    next()
+
+  if (requiresAdmin && !authStore.isAdmin) {
+    next('/dashboard')
+    return
   }
+
+  next()
 })
 
 export default router
