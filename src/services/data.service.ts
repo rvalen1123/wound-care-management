@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import type { PostgrestError } from '@supabase/supabase-js';
 
 export interface QueryOptions {
@@ -30,12 +30,9 @@ export const dataService = {
       let query = supabase
         .from('representatives')
         .select(`
-          rep_id,
-          rep_name,
-          commission_formula,
-          rep_type,
-          created_at,
-          updated_at
+          *,
+          parent:parent_id(id, name, email),
+          sub_reps:representatives!parent_id(id, name, email)
         `, { count: 'exact' });
 
       // Apply filters
@@ -77,14 +74,12 @@ export const dataService = {
         .from('orders')
         .select(`
           *,
-          doctors(name),
-          products(Product, "National ASP", Manufacturer),
-          representatives!orders_rep_id_fkey(
-            rep_id,
-            rep_name,
-            commission_formula,
-            rep_type
-          )
+          doctor:doctor_id(*),
+          product:product_id(*),
+          master_rep:master_rep_id(*),
+          sub_rep:sub_rep_id(*),
+          sub_sub_rep:sub_sub_rep_id(*),
+          commission_payments(*)
         `, { count: 'exact' });
 
       // Apply filters
@@ -124,7 +119,10 @@ export const dataService = {
 
       let query = supabase
         .from('doctors')
-        .select('*', { count: 'exact' });
+        .select(`
+          *,
+          orders(*)
+        `, { count: 'exact' });
 
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {
@@ -150,23 +148,62 @@ export const dataService = {
     }
   },
 
-  // Commission Structures
-  async getCommissionStructures(options: QueryOptions = {}): Promise<QueryResult<any>> {
+  // Products
+  async getProducts(options: QueryOptions = {}): Promise<QueryResult<any>> {
     try {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'created_at',
+        sortBy = 'name',
+        sortDesc = false,
+        filters = {}
+      } = options;
+
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' });
+
+      // Apply filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.eq(key, value);
+        }
+      });
+
+      // Apply sorting
+      query = query.order(sortBy, { ascending: !sortDesc });
+
+      // Apply pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      return { data, error, count };
+    } catch (error) {
+      console.error('Error in getProducts:', error);
+      return { data: null, error: error as PostgrestError, count: null };
+    }
+  },
+
+  // Commission Payments
+  async getCommissionPayments(options: QueryOptions = {}): Promise<QueryResult<any>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'payment_date',
         sortDesc = true,
         filters = {}
       } = options;
 
       let query = supabase
-        .from('commission_structures')
+        .from('commission_payments')
         .select(`
           *,
-          orders(id, date_of_service),
-          representatives(rep_id, rep_name, commission_formula, rep_type)
+          order:order_id(*),
+          representative:rep_id(*)
         `, { count: 'exact' });
 
       // Apply filters
@@ -188,7 +225,7 @@ export const dataService = {
 
       return { data, error, count };
     } catch (error) {
-      console.error('Error in getCommissionStructures:', error);
+      console.error('Error in getCommissionPayments:', error);
       return { data: null, error: error as PostgrestError, count: null };
     }
   },
@@ -196,36 +233,39 @@ export const dataService = {
   // Analytics
   async getAnalytics(timeframe: 'day' | 'week' | 'month' | 'quarter' | 'year' = 'month') {
     try {
-      // Get total sales
-      const { data: salesData, error: salesError } = await supabase
-        .from('orders')
-        .select('invoice_to_doc, created_at')
-        .gte('created_at', getTimeframeDate(timeframe));
+      const startDate = getTimeframeDate(timeframe);
 
-      // Get total commissions
-      const { data: commissionsData, error: commissionsError } = await supabase
+      // Get total sales and commissions
+      const { data: orderStats, error: orderError } = await supabase
         .from('orders')
-        .select('msc_commission, created_at')
-        .gte('created_at', getTimeframeDate(timeframe));
+        .select(`
+          invoice_to_doc,
+          msc_commission,
+          created_at
+        `)
+        .gte('created_at', startDate.toISOString());
 
       // Get top performing reps
       const { data: topReps, error: repsError } = await supabase
         .from('representatives')
         .select(`
-          rep_name,
-          orders!orders_rep_id_fkey(count)
+          name,
+          orders:orders!master_rep_id(count)
         `)
         .order('orders(count)', { ascending: false })
         .limit(5);
 
-      if (salesError || commissionsError || repsError) {
+      if (orderError || repsError) {
         throw new Error('Error fetching analytics data');
       }
 
+      const totalSales = orderStats?.reduce((sum, order) => sum + (order.invoice_to_doc || 0), 0) || 0;
+      const totalCommissions = orderStats?.reduce((sum, order) => sum + (order.msc_commission || 0), 0) || 0;
+
       return {
         data: {
-          totalSales: salesData?.reduce((sum, order) => sum + (order.invoice_to_doc || 0), 0) || 0,
-          totalCommissions: commissionsData?.reduce((sum, comm) => sum + (comm.msc_commission || 0), 0) || 0,
+          totalSales,
+          totalCommissions,
           topReps: topReps || []
         },
         error: null

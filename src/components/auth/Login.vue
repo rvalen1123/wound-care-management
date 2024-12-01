@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
       <div>
-        <img class="mx-auto h-12 w-auto" src="@/assets/logo.png" alt="Logo">
+        <img class="mx-auto h-12 w-auto" src="/msc-logo.png" alt="MSC Wound Care">
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
         </h2>
@@ -69,36 +69,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { authService } from '@/services/auth.service'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { authService } from '@/services/auth.service';
 
-const router = useRouter()
-const email = ref('')
-const password = ref('')
-const error = ref<string | null>(null)
-const loading = ref(false)
+const router = useRouter();
+const email = ref('');
+const password = ref('');
+const error = ref<string | null>(null);
+const loading = ref(false);
 
 const handleSubmit = async () => {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
-    const { user, error: authError } = await authService.signIn(email.value, password.value)
+    console.log('Attempting login with:', email.value);
+    const { user, error: authError } = await authService.signIn(email.value, password.value);
     
     if (authError) {
-      error.value = authError.message
-      return
+      console.error('Auth error:', authError);
+      error.value = authError.message;
+      return;
     }
 
     if (user) {
-      router.push('/dashboard')
+      console.log('Login successful, redirecting to dashboard');
+      router.push('/dashboard');
+    } else {
+      error.value = 'Login failed: No user data returned';
     }
   } catch (err) {
-    error.value = 'An error occurred during sign in'
-    console.error('Sign in error:', err)
+    console.error('Sign in error:', err);
+    error.value = err instanceof Error ? err.message : 'An error occurred during sign in';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
