@@ -19,6 +19,7 @@
               v-model="email"
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Email address"
+              :disabled="loading"
             >
           </div>
           <div>
@@ -31,19 +32,31 @@
               v-model="password"
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Password"
+              :disabled="loading"
             >
           </div>
         </div>
 
-        <div v-if="error" class="text-red-600 text-sm text-center">
-          {{ error }}
+        <div v-if="error" class="rounded-md bg-red-50 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">
+                {{ error }}
+              </h3>
+            </div>
+          </div>
         </div>
 
         <div>
           <button
             type="submit"
             :disabled="loading"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
             <span class="absolute left-0 inset-y-0 flex items-center pl-3">
               <svg
@@ -62,6 +75,14 @@
             </span>
             {{ loading ? 'Signing in...' : 'Sign in' }}
           </button>
+        </div>
+
+        <div class="flex items-center justify-center">
+          <div class="text-sm">
+            <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
+              Forgot your password?
+            </a>
+          </div>
         </div>
       </form>
     </div>
@@ -93,11 +114,35 @@ const handleSubmit = async () => {
       return;
     }
 
-    if (user) {
-      console.log('Login successful, redirecting to dashboard');
-      router.push('/dashboard');
-    } else {
-      error.value = 'Login failed: No user data returned';
+    if (!user) {
+      error.value = 'Login failed: Invalid credentials';
+      return;
+    }
+
+    // Get user role
+    const userRole = await authService.getUserRole();
+    if (!userRole) {
+      error.value = 'Login failed: User role not found';
+      await authService.signOut();
+      return;
+    }
+
+    console.log('Login successful, user role:', userRole.role);
+
+    // Redirect based on role
+    switch (userRole.role) {
+      case 'admin':
+        router.push('/dashboard');
+        break;
+      case 'rep':
+        router.push('/rep/dashboard');
+        break;
+      case 'doctor':
+        router.push('/doctor/dashboard');
+        break;
+      default:
+        error.value = 'Login failed: Invalid user role';
+        await authService.signOut();
     }
   } catch (err) {
     console.error('Sign in error:', err);
