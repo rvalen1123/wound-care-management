@@ -15,11 +15,14 @@ import Register from '@/views/Register.vue'
 import ManufacturerManagement from '@/views/ManufacturerManagement.vue'
 import OrderForm from '@/views/OrderForm.vue'
 import CommissionStructureManagement from '@/views/CommissionStructureManagement.vue'
+import RepDashboard from '@/components/rep/RepDashboard.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/login'
+    name: 'Home',
+    component: DashboardView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -92,6 +95,12 @@ const routes: RouteRecordRaw[] = [
     name: 'CommissionStructureManagement',
     component: CommissionStructureManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/rep/dashboard',
+    name: 'RepDashboard',
+    component: RepDashboard,
+    meta: { requiresAuth: true }
   }
 ]
 

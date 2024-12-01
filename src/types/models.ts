@@ -94,6 +94,108 @@ export interface AuditLog {
   user?: User
 }
 
+export interface CommissionStructure {
+  master_rep_id: string
+  sub_rep_id?: string
+  sub_sub_rep_id?: string
+  master_rep_percentage: number
+  sub_rep_percentage: number
+  sub_sub_rep_percentage: number
+  is_default: boolean
+  created_by: string
+  created_at: string
+  updated_by?: string
+  updated_at?: string
+}
+
+export interface RepCommission {
+  rep_id: string
+  rep_name: string
+  rep_type: 'master' | 'sub' | 'sub-sub'
+  percentage: number
+  amount: number
+  default_percentage: number
+}
+
+export interface OrderCommission {
+  total_commission: number
+  commission_structure_id?: string
+  master_rep_commission: RepCommission
+  sub_rep_commission?: RepCommission
+  sub_sub_rep_commission?: RepCommission
+  last_modified_by?: string
+  last_modified_at?: string
+}
+
+export interface RepProfile {
+  rep_id: number
+  rep_name: string
+  commission_formula: string
+}
+
+export interface RepCommissionAgreement {
+  id: string
+  master_rep_id: string
+  sub_rep_id: string
+  commission_rate: number // The agreed commission rate between master and sub
+  effective_from: string
+  effective_to?: string
+  status: 'active' | 'inactive'
+  created_at: string
+  created_by: string // Admin who created the agreement
+  updated_at?: string
+  updated_by?: string
+}
+
+export interface OrderCommissionBreakdown {
+  order_id: number
+  total_commission: number
+  commissions: {
+    rep_id: string
+    rep_name: string
+    rep_type: 'master' | 'sub' | 'sub-sub'
+    commission_rate: number // Their actual rate for this order
+    commission_amount: number
+    base_rate: number // Their default commission rate
+    effective_rate: number // The rate after splitting with sub-reps
+  }[]
+  created_at: string
+  created_by: string
+  updated_at?: string
+  updated_by?: string
+}
+
+export interface PartialOrderCalculations {
+  product?: Product
+  repId?: string
+  units?: number
+  invoiceAmount?: number
+  expectedCollectionDate?: string
+  mscCommission?: number
+}
+
+export interface CommissionPeriod {
+  period: string
+  orders: number
+  base_commission: number
+  effective_commission: number
+  sub_rep_share: number
+}
+
+export interface OrderCalculations {
+  units: number
+  invoiceAmount: number
+  expectedCollectionDate: string
+  mscCommission: number
+  product: Product
+  repId: string
+  amount: number
+  repCommissions: Array<{
+    repId: string
+    amount: number
+  }>
+}
+
 // Helper types for filtering and querying
 export interface OrderFilters {
   doctorId?: string
@@ -111,17 +213,4 @@ export interface ReportFilters {
   productId?: string
   repId?: string
   type?: 'orders' | 'payments' | 'commissions'
-}
-
-// Types for auto-calculations
-export interface OrderCalculations {
-  units: number
-  invoiceAmount: number
-  expectedCollectionDate: string
-  mscCommission: number
-  product: Product
-  repCommissions?: Array<{
-    repId: string
-    amount: number
-  }>
 }

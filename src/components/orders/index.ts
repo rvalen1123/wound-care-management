@@ -1,2 +1,4 @@
-export { default as AddOrderModal } from './AddOrderModal.vue'
-export { default as OrderDetailsModal } from './OrderDetailsModal.vue'
+export { default as OrderList } from './OrderList.vue'
+export { default as OrderForm } from './OrderForm.vue'
+export { default as OrderDetails } from './OrderDetails.vue'
+export { default as OrderCommissionBreakdown } from './OrderCommissionBreakdown.vue'
