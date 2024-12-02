@@ -205,3 +205,17 @@ CREATE POLICY "Admins can do everything" ON payments FOR ALL TO authenticated US
 );
 
 CREATE POLICY "Admins can do everything" ON commission_structures FOR ALL TO authenticated USING (
+  auth.uid() IN (SELECT id FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin')
+);
+
+CREATE POLICY "Admins can do everything" ON representatives FOR ALL TO authenticated USING (
+  auth.uid() IN (SELECT id FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin')
+);
+
+CREATE POLICY "Users can read their own profile" ON profiles FOR SELECT TO authenticated USING (
+  auth.uid() = user_id
+);
+
+CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE TO authenticated USING (
+  auth.uid() = user_id
+);
