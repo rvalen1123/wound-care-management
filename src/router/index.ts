@@ -149,12 +149,24 @@ interface AuthStore {
   };
 }
 
-// Define the navigation guard with inferred types
-router.beforeEach(async (to, from, next) => {
+interface Route {
+  path: string;
+  name?: string;
+  fullPath: string;
+  meta?: {
+    requiresAuth?: boolean;
+    roles?: string[];
+  };
+}
+
+type NavigationNext = (to?: string | { name: string; query: Record<string, string> }) => void;
+
+// Add the navigation guard with proper type annotations
+const authGuard = (to: Route, _from: Route, next: NavigationNext): void => {
   const authStore: AuthStore = useAuthStore();
 
   // Check if route requires authentication
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
     next({
       name: 'login',
       query: { redirect: to.fullPath },
@@ -163,7 +175,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Check for role-based access
-  if (to.meta.roles) {
+  if (to.meta?.roles) {
     const userRole = authStore.user?.user_metadata?.role;
     if (!hasRole(to.meta.roles, userRole)) {
       console.warn('Access denied: User role not authorized');
@@ -179,7 +191,10 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next();
-});
+};
+
+// Apply the auth guard
+router.beforeEach(authGuard);
 
 // Export the router
 export default router;
