@@ -1,279 +1,232 @@
 <template>
-  <div class="container mx-auto px-4 py-6">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Commission Structure Management</h1>
-      <Button 
-        label="Add Commission Structure" 
-        icon="pi pi-plus" 
+  <Layout
+    title="Commission Structure Management"
+    :loading="loading"
+    :error="error"
+  >
+    <template #actions>
+      <Button
+        label="Add Commission Structure"
+        icon="pi pi-plus"
+        severity="success"
         @click="openCommissionDialog()"
-        class="p-button-primary"
       />
-    </div>
+    </template>
 
     <!-- Commission Structures Table -->
-    <DataTable 
-      :value="commissionStructures"
-      :paginator="true"
-      :rows="10"
-      :loading="loading"
-      class="p-datatable-sm shadow-sm rounded-lg bg-white"
-      responsiveLayout="scroll"
-      stripedRows
-      showGridlines
-    >
-      <Column field="manufacturer.name" header="Manufacturer" sortable>
-        <template #body="{ data }">
-          <span class="font-medium">{{ data.manufacturer?.name || '-' }}</span>
+    <Card>
+      <Table
+        :columns="columns"
+        :items="commissionStructures"
+        :pagination="true"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total-items="commissionStructures.length"
+        @update:current-page="currentPage = $event"
+      >
+        <template #manufacturer="{ item }">
+          <span class="font-medium">{{ item.manufacturer?.name || '-' }}</span>
         </template>
-      </Column>
-      <Column field="master_rep.name" header="Master Rep" sortable>
-        <template #body="{ data }">
-          <span>{{ data.master_rep?.name || '-' }}</span>
-        </template>
-      </Column>
-      <Column field="sub_rep.name" header="Sub Rep" sortable>
-        <template #body="{ data }">
-          <span>{{ data.sub_rep?.name || '-' }}</span>
-        </template>
-      </Column>
-      <Column field="sub_sub_rep.name" header="Sub-Sub Rep" sortable>
-        <template #body="{ data }">
-          <span>{{ data.sub_sub_rep?.name || '-' }}</span>
-        </template>
-      </Column>
-      
-      <Column field="master_rep_rate" header="Master Rate" sortable>
-        <template #body="{ data }">
-          <span class="font-medium text-blue-600">{{ data.master_rep_rate }}%</span>
-        </template>
-      </Column>
-      
-      <Column field="sub_rep_rate" header="Sub Rate" sortable>
-        <template #body="{ data }">
-          <span class="font-medium text-green-600">{{ data.sub_rep_rate }}%</span>
-        </template>
-      </Column>
-      
-      <Column field="sub_sub_rep_rate" header="Sub-Sub Rate" sortable>
-        <template #body="{ data }">
-          <span class="font-medium text-purple-600">{{ data.sub_sub_rep_rate }}%</span>
-        </template>
-      </Column>
 
-      <Column header="Actions" :exportable="false" style="min-width:8rem">
-        <template #body="{ data }">
+        <template #master_rep="{ item }">
+          <span>{{ item.master_rep?.name || '-' }}</span>
+        </template>
+
+        <template #sub_rep="{ item }">
+          <span>{{ item.sub_rep?.name || '-' }}</span>
+        </template>
+
+        <template #sub_sub_rep="{ item }">
+          <span>{{ item.sub_sub_rep?.name || '-' }}</span>
+        </template>
+
+        <template #master_rep_rate="{ item }">
+          <Badge severity="info">{{ item.master_rep_rate }}%</Badge>
+        </template>
+
+        <template #sub_rep_rate="{ item }">
+          <Badge severity="success">{{ item.sub_rep_rate }}%</Badge>
+        </template>
+
+        <template #sub_sub_rep_rate="{ item }">
+          <Badge severity="warning">{{ item.sub_sub_rep_rate }}%</Badge>
+        </template>
+
+        <template #actions="{ item }">
           <div class="flex gap-2">
-            <Button 
-              icon="pi pi-pencil" 
-              class="p-button-text p-button-rounded p-button-info"
-              @click="openCommissionDialog(data)" 
+            <Button
+              icon="pi pi-pencil"
+              severity="info"
+              @click="openCommissionDialog(item)"
               tooltip="Edit"
             />
-            <Button 
-              icon="pi pi-history" 
-              class="p-button-text p-button-rounded p-button-secondary"
-              @click="viewAuditHistory(data)" 
+            <Button
+              icon="pi pi-history"
+              severity="secondary"
+              @click="viewAuditHistory(item)"
               tooltip="View History"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </Table>
+    </Card>
 
     <!-- Commission Structure Dialog -->
-    <Dialog 
-      v-model:visible="showCommissionDialog" 
-      :header="dialogMode === 'add' ? 'Add Commission Structure' : 'Edit Commission Structure'"
-      modal
-      class="p-fluid w-full md:w-2/3 lg:w-1/2"
+    <Modal
+      v-model="showCommissionDialog"
+      :title="dialogMode === 'add' ? 'Add Commission Structure' : 'Edit Commission Structure'"
+      confirm-label="Save"
+      :confirm-disabled="!isValidTotal || !editingStructure.manufacturer_id || !editingStructure.master_rep_id"
+      :loading="saving"
+      @confirm="saveCommissionStructure"
     >
-      <div class="grid grid-cols-1 gap-4 p-4">
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Manufacturer</label>
-          <Dropdown
-            v-model="editingStructure.manufacturer_id"
-            :options="manufacturers"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Select Manufacturer"
-            class="w-full"
-            :class="{'p-invalid': !editingStructure.manufacturer_id}"
-            required
-          />
-        </div>
+      <div class="grid grid-cols-1 gap-4">
+        <FormDropdown
+          v-model="editingStructure.manufacturer_id"
+          :options="manufacturers"
+          optionLabel="name"
+          optionValue="id"
+          label="Manufacturer"
+          placeholder="Select Manufacturer"
+          :required="true"
+          :error="!editingStructure.manufacturer_id ? 'Manufacturer is required' : ''"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Master Rep</label>
-          <Dropdown
-            v-model="editingStructure.master_rep_id"
-            :options="masterReps"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Select Master Rep"
-            class="w-full"
-            :class="{'p-invalid': !editingStructure.master_rep_id}"
-            required
-          />
-        </div>
+        <FormDropdown
+          v-model="editingStructure.master_rep_id"
+          :options="masterReps"
+          optionLabel="name"
+          optionValue="id"
+          label="Master Rep"
+          placeholder="Select Master Rep"
+          :required="true"
+          :error="!editingStructure.master_rep_id ? 'Master Rep is required' : ''"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Sub Rep (Optional)</label>
-          <Dropdown
-            v-model="editingStructure.sub_rep_id"
-            :options="subReps"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Select Sub Rep"
-            class="w-full"
-          />
-        </div>
+        <FormDropdown
+          v-model="editingStructure.sub_rep_id"
+          :options="subReps"
+          optionLabel="name"
+          optionValue="id"
+          label="Sub Rep (Optional)"
+          placeholder="Select Sub Rep"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Sub-Sub Rep (Optional)</label>
-          <Dropdown
-            v-model="editingStructure.sub_sub_rep_id"
-            :options="subSubReps"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Select Sub-Sub Rep"
-            class="w-full"
-          />
-        </div>
+        <FormDropdown
+          v-model="editingStructure.sub_sub_rep_id"
+          :options="subSubReps"
+          optionLabel="name"
+          optionValue="id"
+          label="Sub-Sub Rep (Optional)"
+          placeholder="Select Sub-Sub Rep"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Master Rep Rate (%)</label>
-          <InputNumber 
-            v-model="editingStructure.master_rep_rate"
-            :min="0"
-            :max="100"
-            required
-            @change="validateTotalRate"
-            class="w-full"
-            :class="{'p-invalid': !editingStructure.master_rep_rate}"
-          />
-        </div>
+        <FormInput
+          v-model="editingStructure.master_rep_rate"
+          type="number"
+          label="Master Rep Rate"
+          :required="true"
+          :min="0"
+          :max="100"
+          suffix="%"
+          @input="validateTotalRate"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Sub Rep Rate (%)</label>
-          <InputNumber 
-            v-model="editingStructure.sub_rep_rate"
-            :min="0"
-            :max="100"
-            @change="validateTotalRate"
-            class="w-full"
-          />
-        </div>
+        <FormInput
+          v-model="editingStructure.sub_rep_rate"
+          type="number"
+          label="Sub Rep Rate"
+          :min="0"
+          :max="100"
+          suffix="%"
+          @input="validateTotalRate"
+        />
 
-        <div class="field">
-          <label class="font-medium mb-2 block text-gray-700">Sub-Sub Rep Rate (%)</label>
-          <InputNumber 
-            v-model="editingStructure.sub_sub_rep_rate"
-            :min="0"
-            :max="100"
-            @change="validateTotalRate"
-            class="w-full"
-          />
-        </div>
+        <FormInput
+          v-model="editingStructure.sub_sub_rep_rate"
+          type="number"
+          label="Sub-Sub Rep Rate"
+          :min="0"
+          :max="100"
+          suffix="%"
+          @input="validateTotalRate"
+        />
 
-        <div class="text-right text-sm font-medium" :class="{'text-red-600': !isValidTotal, 'text-green-600': isValidTotal}">
+        <div class="text-right text-sm font-medium" :class="{'text-red-400': !isValidTotal, 'text-green-400': isValidTotal}">
           Total Commission Rate: {{ totalRate }}%
         </div>
       </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <Button 
-            label="Cancel" 
-            icon="pi pi-times" 
-            @click="showCommissionDialog = false" 
-            class="p-button-text"
-          />
-          <Button 
-            label="Save" 
-            icon="pi pi-check" 
-            @click="saveCommissionStructure" 
-            :loading="saving"
-            :disabled="!isValidTotal || !editingStructure.manufacturer_id || !editingStructure.master_rep_id"
-            class="p-button-primary"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </Modal>
 
     <!-- Audit History Dialog -->
-    <Dialog 
-      v-model:visible="showAuditDialog" 
-      header="Commission Structure History"
-      modal
-      maximizable
-      class="w-full md:w-3/4 lg:w-2/3"
+    <Modal
+      v-model="showAuditDialog"
+      title="Commission Structure History"
     >
-      <DataTable 
-        :value="auditHistory" 
-        class="p-datatable-sm"
-        responsiveLayout="scroll"
-        stripedRows
-        showGridlines
+      <Table
+        :columns="auditColumns"
+        :items="auditHistory"
       >
-        <Column field="changed_at" header="Date" sortable>
-          <template #body="{ data }">
-            <span class="text-gray-600">{{ formatDate(data.changed_at) }}</span>
-          </template>
-        </Column>
-        <Column field="changed_by_name" header="Changed By" sortable>
-          <template #body="{ data }">
-            <span class="text-gray-800">{{ data.changed_by_name }}</span>
-          </template>
-        </Column>
-        <Column header="Previous Rates">
-          <template #body="{ data }">
-            <div class="space-y-1">
-              <div class="text-blue-600">Master: {{ data.previous_master_rate }}%</div>
-              <div class="text-green-600">Sub: {{ data.previous_sub_rate }}%</div>
-              <div class="text-purple-600">Sub-Sub: {{ data.previous_sub_sub_rate }}%</div>
-            </div>
-          </template>
-        </Column>
-        <Column header="New Rates">
-          <template #body="{ data }">
-            <div class="space-y-1">
-              <div class="text-blue-600">Master: {{ data.new_master_rate }}%</div>
-              <div class="text-green-600">Sub: {{ data.new_sub_rate }}%</div>
-              <div class="text-purple-600">Sub-Sub: {{ data.new_sub_sub_rate }}%</div>
-            </div>
-          </template>
-        </Column>
-        <Column field="reason" header="Reason">
-          <template #body="{ data }">
-            <span class="text-gray-700">{{ data.reason || '-' }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </Dialog>
-  </div>
-</template> 
+        <template #changed_at="{ value }">
+          <span class="text-gray-300">{{ formatDate(value) }}</span>
+        </template>
+
+        <template #changed_by_name="{ value }">
+          <span class="text-gray-200">{{ value }}</span>
+        </template>
+
+        <template #previous_rates="{ item }">
+          <div class="space-y-1">
+            <div><Badge severity="info">Master: {{ item.previous_master_rate }}%</Badge></div>
+            <div><Badge severity="success">Sub: {{ item.previous_sub_rate }}%</Badge></div>
+            <div><Badge severity="warning">Sub-Sub: {{ item.previous_sub_sub_rate }}%</Badge></div>
+          </div>
+        </template>
+
+        <template #new_rates="{ item }">
+          <div class="space-y-1">
+            <div><Badge severity="info">Master: {{ item.new_master_rate }}%</Badge></div>
+            <div><Badge severity="success">Sub: {{ item.new_sub_rate }}%</Badge></div>
+            <div><Badge severity="warning">Sub-Sub: {{ item.new_sub_sub_rate }}%</Badge></div>
+          </div>
+        </template>
+
+        <template #reason="{ value }">
+          <span class="text-gray-300">{{ value || '-' }}</span>
+        </template>
+      </Table>
+    </Modal>
+  </Layout>
+</template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import InputNumber from 'primevue/inputnumber'
-import { useSupabase } from '@/composables/useSupabase'
-import { useToast } from 'primevue/usetoast'
-import type { CommissionStructure, Manufacturer, Representative, AuditLogEntry } from '@/types'
+import { useSupabase } from '../composables/useSupabase'
+import type { CommissionStructure, Manufacturer, Representative, AuditLogEntry } from '../types/models'
+import { 
+  Layout, 
+  Card, 
+  Badge, 
+  Button, 
+  Modal, 
+  Table, 
+  FormDropdown, 
+  FormInput 
+} from '../components/common/ui'
 
 const supabase = useSupabase()
-const toast = useToast()
+
+// State
+const loading = ref(false)
+const error = ref<string | null>(null)
+const saving = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // Dialog state
 const showCommissionDialog = ref(false)
 const showAuditDialog = ref(false)
 const dialogMode = ref<'add' | 'edit'>('add')
-const saving = ref(false)
-const loading = ref(false)
 
 // Data
 const commissionStructures = ref<CommissionStructure[]>([])
@@ -294,65 +247,24 @@ const subReps = ref<Representative[]>([])
 const subSubReps = ref<Representative[]>([])
 const auditHistory = ref<AuditLogEntry[]>([])
 
-// Load data
-const loadCommissionStructures = async () => {
-  loading.value = true
-  try {
-    const { data, error } = await supabase
-      .from('commission_structures')
-      .select(`
-        *,
-        manufacturer:manufacturers(id, name),
-        master_rep:representatives(id, name),
-        sub_rep:representatives(id, name),
-        sub_sub_rep:representatives(id, name)
-      `)
-    
-    if (error) throw error
-    commissionStructures.value = data || []
-  } catch (error) {
-    console.error('Error loading commission structures:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load commission structures' })
-  } finally {
-    loading.value = false
-  }
-}
+// Table columns
+const columns = [
+  { field: 'manufacturer', header: 'Manufacturer' },
+  { field: 'master_rep', header: 'Master Rep' },
+  { field: 'sub_rep', header: 'Sub Rep' },
+  { field: 'sub_sub_rep', header: 'Sub-Sub Rep' },
+  { field: 'master_rep_rate', header: 'Master Rate' },
+  { field: 'sub_rep_rate', header: 'Sub Rate' },
+  { field: 'sub_sub_rep_rate', header: 'Sub-Sub Rate' }
+]
 
-const loadManufacturers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('manufacturers')
-      .select('id, name, default_doctor_discount')
-      .order('name')
-    
-    if (error) throw error
-    manufacturers.value = (data || []).map(item => ({
-      id: item.id,
-      name: item.name,
-      default_doctor_discount: item.default_doctor_discount || 0
-    }))
-  } catch (error) {
-    console.error('Error loading manufacturers:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load manufacturers' })
-  }
-}
-
-const loadRepresentatives = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('representatives')
-      .select('id, name')
-      .order('name')
-    
-    if (error) throw error
-    masterReps.value = data || []
-    subReps.value = data || []
-    subSubReps.value = data || []
-  } catch (error) {
-    console.error('Error loading representatives:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load representatives' })
-  }
-}
+const auditColumns = [
+  { field: 'changed_at', header: 'Date' },
+  { field: 'changed_by_name', header: 'Changed By' },
+  { field: 'previous_rates', header: 'Previous Rates' },
+  { field: 'new_rates', header: 'New Rates' },
+  { field: 'reason', header: 'Reason' }
+]
 
 // Computed
 const totalRate = computed(() => {
@@ -382,6 +294,62 @@ const formatDate = (date: string) => {
   })
 }
 
+const loadCommissionStructures = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data, error: err } = await supabase
+      .from('commission_structures')
+      .select(`
+        *,
+        manufacturer:manufacturers(id, name),
+        master_rep:representatives(id, name),
+        sub_rep:representatives(id, name),
+        sub_sub_rep:representatives(id, name)
+      `)
+    
+    if (err) throw err
+    commissionStructures.value = data || []
+  } catch (err: any) {
+    console.error('Error loading commission structures:', err)
+    error.value = 'Failed to load commission structures'
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadManufacturers = async () => {
+  try {
+    const { data, error: err } = await supabase
+      .from('manufacturers')
+      .select('id, name, default_doctor_discount')
+      .order('name')
+    
+    if (err) throw err
+    manufacturers.value = data || []
+  } catch (err: any) {
+    console.error('Error loading manufacturers:', err)
+    error.value = 'Failed to load manufacturers'
+  }
+}
+
+const loadRepresentatives = async () => {
+  try {
+    const { data, error: err } = await supabase
+      .from('representatives')
+      .select('id, name')
+      .order('name')
+    
+    if (err) throw err
+    masterReps.value = data || []
+    subReps.value = data || []
+    subSubReps.value = data || []
+  } catch (err: any) {
+    console.error('Error loading representatives:', err)
+    error.value = 'Failed to load representatives'
+  }
+}
+
 const openCommissionDialog = async (data?: CommissionStructure) => {
   dialogMode.value = data ? 'edit' : 'add'
   if (data) {
@@ -407,7 +375,7 @@ const openCommissionDialog = async (data?: CommissionStructure) => {
 
 const viewAuditHistory = async (structure: CommissionStructure) => {
   try {
-    const { data, error } = await supabase
+    const { data, error: err } = await supabase
       .from('commission_structure_audit_log')
       .select(`
         *,
@@ -416,15 +384,15 @@ const viewAuditHistory = async (structure: CommissionStructure) => {
       .eq('commission_structure_id', structure.id)
       .order('changed_at', { ascending: false })
     
-    if (error) throw error
+    if (err) throw err
     auditHistory.value = (data || []).map(item => ({
       ...item,
       changed_by_name: item.changed_by_user?.email || 'System'
     }))
     showAuditDialog.value = true
-  } catch (error) {
-    console.error('Error loading audit history:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load audit history' })
+  } catch (err: any) {
+    console.error('Error loading audit history:', err)
+    error.value = 'Failed to load audit history'
   }
 }
 
@@ -432,6 +400,7 @@ const saveCommissionStructure = async () => {
   if (!isValidTotal.value) return
   
   saving.value = true
+  error.value = null
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const userId = session?.user?.id
@@ -447,16 +416,16 @@ const saveCommissionStructure = async () => {
     }
 
     if (dialogMode.value === 'add') {
-      const { error } = await supabase
+      const { error: err } = await supabase
         .from('commission_structures')
         .insert([commissionData])
-      if (error) throw error
+      if (err) throw err
     } else {
-      const { error } = await supabase
+      const { error: err } = await supabase
         .from('commission_structures')
         .update(commissionData)
         .eq('id', editingStructure.value.id)
-      if (error) throw error
+      if (err) throw err
     }
 
     // Log the audit event
@@ -472,12 +441,11 @@ const saveCommissionStructure = async () => {
       new_sub_sub_rate: commissionData.sub_sub_rep_rate
     }])
 
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Commission structure saved successfully' })
     showCommissionDialog.value = false
     loadCommissionStructures() // Reload the list
-  } catch (error) {
-    console.error('Error saving commission structure:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save commission structure' })
+  } catch (err: any) {
+    console.error('Error saving commission structure:', err)
+    error.value = 'Failed to save commission structure'
   } finally {
     saving.value = false
   }
@@ -487,8 +455,4 @@ const saveCommissionStructure = async () => {
 onMounted(async () => {
   await loadCommissionStructures()
 })
-</script> 
-
-<style>
-/* Add any component styles here */
-</style> 
+</script>

@@ -1,3 +1,4 @@
+<!-- Template remains the same -->
 <template>
   <Layout
     title="Dashboard"
@@ -55,9 +56,9 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-700">
-            <tr v-for="order in recentOrders" :key="order.id" class="hover:bg-gray-700">
+            <tr v-for="order in recentOrders" :key="order.order_id" class="hover:bg-gray-700">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ order.id }}
+                {{ order.order_id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ formatDate(order.date_of_service) }}
@@ -69,8 +70,8 @@
                 ${{ formatCurrency(order.invoice_to_doc) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="getStatusClass(order.status)">
-                  {{ order.status }}
+                <span :class="getStatusClass(order.payment_status)">
+                  {{ order.payment_status }}
                 </span>
               </td>
             </tr>
@@ -169,9 +170,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import Layout from '@/components/common/ui/Layout.vue';
-import { dataService } from '@/services/data.service';
-import type { Order, Representative, Analytics, DashboardMetrics } from '@/types/models';
+import { Layout } from '../components/common/ui';
+import { dataService } from '../services/data.service';
+import type { Order, Representative, Analytics, DashboardMetrics } from '../types/models';
 
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -254,14 +255,14 @@ const loadDashboardData = async (): Promise<void> => {
     // Calculate metrics
     metrics.value = {
       owedByDoctors: recentOrders.value.reduce((sum: number, order: Order) => {
-        return sum + (order.status === 'outstanding' ? order.invoice_to_doc : 0);
+        return sum + (order.payment_status === 'outstanding' ? order.invoice_to_doc : 0);
       }, 0),
       owedToManufacturers: recentOrders.value.reduce((sum: number, order: Order) => {
-        return sum + (order.status === 'outstanding' ? order.invoice_to_doc * 0.4 : 0);
+        return sum + (order.payment_status === 'outstanding' ? order.invoice_to_doc * 0.4 : 0);
       }, 0),
       owedInCommissions: analytics.value.totalCommissions,
       totalDoctors: new Set(recentOrders.value.map((order: Order) => order.doctor_id)).size,
-      totalProducts: new Set(recentOrders.value.map((order: Order) => order.product_id)).size,
+      totalProducts: new Set(recentOrders.value.map((order: Order) => order.q_code)).size,
       totalReps: salesReps.value.length
     };
   } catch (err) {

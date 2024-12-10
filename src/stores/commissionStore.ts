@@ -1,249 +1,123 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { supabase } from '../lib/supabaseClient';
-import type { 
-  CommissionStructure, 
-  CommissionSplit, 
-  PendingCommissionReview,
-  CommissionSummary,
-  CommissionCalculation,
-  Rep
-} from '../types/models';
+import type { Order, CommissionAuditLog } from '../types/models';
 
 export const useCommissionStore = defineStore('commission', () => {
   // State
-  const structures = ref<CommissionStructure[]>([]);
-  const pendingReviews = ref<PendingCommissionReview[]>([]);
-  const commissionSummary = ref<CommissionSummary | null>(null);
+  const pendingOrders = ref<Order[]>([]);
+  const auditLogs = ref<CommissionAuditLog[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
   // Getters
   const getPendingCommissions = computed(() => 
-    structures.value.filter((s: CommissionStructure) => s.status === 'pending')
-  );
-
-  const getCommissionsByOrder = computed(() => 
-    (orderId: string) => structures.value.find((s: CommissionStructure) => s.order_id === orderId)
+    pendingOrders.value.filter((order: Order) => !order.msc_commission)
   );
 
   const getTotalCommission = computed(() => 
-    commissionSummary.value?.total_commission || 0
-  );
-
-  const getDirectCommission = computed(() => 
-    commissionSummary.value?.direct_commission || 0
-  );
-
-  const getIndirectCommission = computed(() => 
-    commissionSummary.value?.indirect_commission || 0
+    pendingOrders.value.reduce((sum: number, order: Order) => 
+      sum + (order.msc_commission || 0), 
+      0
+    )
   );
 
   // Actions
-  async function fetchCommissionStructures(repId?: string) {
-    loading.value = true;
-    try {
-      let query = supabase
-        .from('commission_structures')
-        .select(`
-          *,
-          rep:rep_id(*),
-          order:order_id(*),
-          splits:commission_splits(
-            *,
-            rep:rep_id(*),
-            relationship:relationship_id(*)
-          )
-        `);
-
-      if (repId) {
-        query = query.eq('rep_id', repId);
-      }
-
-      const { data, error: queryError } = await query;
-      if (queryError) throw queryError;
-      structures.value = data;
-    } catch (err) {
-      console.error('Error fetching commission structures:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to fetch commission structures';
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function fetchPendingReviews() {
+  async function fetchPendingOrders() {
     loading.value = true;
     try {
       const { data, error: queryError } = await supabase
-        .from('pending_commission_reviews')
+        .from('orders')
         .select(`
           *,
-          commission_structure:commission_structure_id(
-            *,
-            rep:rep_id(*),
-            order:order_id(*)
-          ),
-          proposer:proposed_by(*),
-          reviewer:reviewed_by(*)
+          doctor:doctor_id(*),
+          master_rep:master_rep_id(*),
+          sub_rep:sub_rep_id(*),
+          sub_sub_rep:sub_sub_rep_id(*)
         `)
+        .is('msc_commission', null)
         .eq('status', 'pending');
 
       if (queryError) throw queryError;
-      pendingReviews.value = data;
+      pendingOrders.value = data || [];
     } catch (err) {
-      console.error('Error fetching pending reviews:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to fetch pending reviews';
+      console.error('Error fetching pending orders:', err);
+      error.value = err instanceof Error ? err.message : 'Failed to fetch pending orders';
     } finally {
       loading.value = false;
     }
   }
 
-  async function createCommissionStructure(orderId: string, repId: string, baseAmount: number) {
+  async function approveCommission(orderId: string, commissionData: any) {
     try {
-      const { data: structure, error: structureError } = await supabase
-        .from('commission_structures')
-        .insert({
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          commission_structure: commissionData,
+          msc_commission: commissionData.total,
+          status: 'approved',
+          approved_at: new Date().toISOString()
+        })
+        .eq('order_id', orderId);
+
+      if (updateError) throw updateError;
+
+      // Create commission payments
+      if (commissionData.splits) {
+        const payments = commissionData.splits.map((split: any) => ({
           order_id: orderId,
-          rep_id: repId,
-          base_commission_amount: baseAmount
-        })
-        .select()
-        .single();
+          rep_id: split.rep_id,
+          amount: split.amount,
+          payment_date: new Date().toISOString()
+        }));
 
-      if (structureError) throw structureError;
+        const { error: paymentsError } = await supabase
+          .from('commission_payments')
+          .insert(payments);
 
-      const { data: review, error: reviewError } = await supabase
-        .from('pending_commission_reviews')
-        .insert({
-          commission_structure_id: structure.id,
-          proposed_by: repId
-        })
-        .select()
-        .single();
+        if (paymentsError) throw paymentsError;
+      }
 
-      if (reviewError) throw reviewError;
-
-      await fetchCommissionStructures(repId);
-      return structure;
+      await fetchPendingOrders();
     } catch (err) {
-      console.error('Error creating commission structure:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to create commission structure';
-      return null;
+      console.error('Error approving commission:', err);
+      error.value = err instanceof Error ? err.message : 'Failed to approve commission';
     }
   }
 
-  async function approveCommissionStructure(structureId: string, reviewId: string) {
+  async function rejectCommission(orderId: string, notes: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
-
-      const { error: structureError } = await supabase
-        .from('commission_structures')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: user.id
-        })
-        .eq('id', structureId);
-
-      if (structureError) throw structureError;
-
-      const { error: reviewError } = await supabase
-        .from('pending_commission_reviews')
-        .update({
-          status: 'approved',
-          reviewed_by: user.id
-        })
-        .eq('id', reviewId);
-
-      if (reviewError) throw reviewError;
-
-      await Promise.all([
-        fetchCommissionStructures(),
-        fetchPendingReviews()
-      ]);
-    } catch (err) {
-      console.error('Error approving commission structure:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to approve commission structure';
-    }
-  }
-
-  async function rejectCommissionStructure(structureId: string, reviewId: string, notes: string) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
-
-      const { error: structureError } = await supabase
-        .from('commission_structures')
-        .update({
-          status: 'rejected'
-        })
-        .eq('id', structureId);
-
-      if (structureError) throw structureError;
-
-      const { error: reviewError } = await supabase
-        .from('pending_commission_reviews')
+      const { error: updateError } = await supabase
+        .from('orders')
         .update({
           status: 'rejected',
-          reviewed_by: user.id,
-          notes
+          commission_structure: { notes }
         })
-        .eq('id', reviewId);
+        .eq('order_id', orderId);
 
-      if (reviewError) throw reviewError;
+      if (updateError) throw updateError;
 
-      await Promise.all([
-        fetchCommissionStructures(),
-        fetchPendingReviews()
-      ]);
+      await fetchPendingOrders();
     } catch (err) {
-      console.error('Error rejecting commission structure:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to reject commission structure';
+      console.error('Error rejecting commission:', err);
+      error.value = err instanceof Error ? err.message : 'Failed to reject commission';
     }
   }
 
-  async function fetchCommissionSummary(repId: string) {
+  async function fetchAuditLogs(orderId: string) {
     loading.value = true;
     try {
-      const { data: directData, error: directError } = await supabase
-        .from('commission_splits')
-        .select('split_amount')
-        .eq('rep_id', repId)
-        .eq('commission_structure.status', 'approved');
+      const { data, error: queryError } = await supabase
+        .from('commission_audit_logs')
+        .select('*')
+        .eq('structure_id', orderId)
+        .order('changed_at', { ascending: false });
 
-      if (directError) throw directError;
-
-      const { data: indirectData, error: indirectError } = await supabase
-        .from('commission_splits')
-        .select('split_amount')
-        .eq('relationship.parent_rep_id', repId)
-        .eq('commission_structure.status', 'approved');
-
-      if (indirectError) throw indirectError;
-
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('commission_structures')
-        .select('base_commission_amount')
-        .eq('rep_id', repId)
-        .eq('status', 'pending');
-
-      if (pendingError) throw pendingError;
-
-      const direct_commission = directData.reduce((sum, split) => sum + split.split_amount, 0);
-      const indirect_commission = indirectData.reduce((sum, split) => sum + split.split_amount, 0);
-      const pending_commission = pendingData.reduce((sum, structure) => sum + structure.base_commission_amount, 0);
-
-      commissionSummary.value = {
-        direct_commission,
-        indirect_commission,
-        pending_commission,
-        total_commission: direct_commission + indirect_commission,
-        commission_by_period: []
-      };
+      if (queryError) throw queryError;
+      auditLogs.value = data || [];
     } catch (err) {
-      console.error('Error fetching commission summary:', err);
-      error.value = err instanceof Error ? err.message : 'Failed to fetch commission summary';
+      console.error('Error fetching audit logs:', err);
+      error.value = err instanceof Error ? err.message : 'Failed to fetch audit logs';
     } finally {
       loading.value = false;
     }
@@ -255,24 +129,18 @@ export const useCommissionStore = defineStore('commission', () => {
 
   return {
     // State
-    structures,
-    pendingReviews,
-    commissionSummary,
+    pendingOrders,
+    auditLogs,
     loading,
     error,
     // Getters
     getPendingCommissions,
-    getCommissionsByOrder,
     getTotalCommission,
-    getDirectCommission,
-    getIndirectCommission,
     // Actions
-    fetchCommissionStructures,
-    fetchPendingReviews,
-    createCommissionStructure,
-    approveCommissionStructure,
-    rejectCommissionStructure,
-    fetchCommissionSummary,
+    fetchPendingOrders,
+    approveCommission,
+    rejectCommission,
+    fetchAuditLogs,
     clearError
   };
 });

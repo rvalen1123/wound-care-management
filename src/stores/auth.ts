@@ -1,108 +1,120 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { supabase } from '../lib/supabaseClient';
-import type { User, Session } from '@supabase/supabase-js';
+import { authService } from '../services/auth.service';
+import type { User } from '@supabase/supabase-js';
+import type { UserRole } from '../services/auth.service';
 
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null);
-  const session = ref<Session | null>(null);
+  const userRole = ref<UserRole | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // Computed
+  // Getters
   const isAuthenticated = computed(() => !!user.value);
+  const isAdmin = computed(() => userRole.value?.role === 'admin');
+  const isRep = computed(() => userRole.value?.role === 'rep');
+  const isDoctor = computed(() => userRole.value?.role === 'doctor');
 
   // Actions
-  const login = async (email: string, password: string) => {
+  async function login(email: string, password: string) {
     loading.value = true;
     error.value = null;
-
+    
     try {
-      console.log('Attempting login for:', email);
-
-      if (!email?.trim() || !password) {
-        throw new Error('Email and password are required');
+      const { data, error: signInError } = await authService.signIn(email, password);
+      
+      if (signInError) {
+        error.value = signInError.message;
+        return;
       }
 
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
-
-      if (loginError) throw loginError;
-      if (!data?.user) throw new Error('No user data returned');
+      if (!data?.user) {
+        error.value = 'Login failed';
+        return;
+      }
 
       user.value = data.user;
-      session.value = data.session;
+      const role = await authService.getUserRole();
+      userRole.value = role;
 
-      console.log('Login successful for:', email);
+      console.log('Login successful, user role:', role);
+
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
-      console.error('Login error:', errorMessage);
-      error.value = errorMessage;
-      throw err;
+      error.value = err instanceof Error ? err.message : 'An error occurred';
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  const logout = async () => {
-    loading.value = true;
-    error.value = null;
-
+  async function logout() {
     try {
-      const { error: logoutError } = await supabase.auth.signOut();
-      if (logoutError) throw logoutError;
-
+      await authService.signOut();
       user.value = null;
-      session.value = null;
+      userRole.value = null;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during logout';
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      loading.value = false;
+      error.value = err instanceof Error ? err.message : 'Logout failed';
     }
-  };
+  }
 
-  const checkAuth = async () => {
+  async function checkAuth() {
     try {
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-
-      if (currentSession) {
-        user.value = currentSession.user;
-        session.value = currentSession;
+      loading.value = true;
+      const currentUser = await authService.getCurrentUser();
+      
+      if (currentUser) {
+        user.value = currentUser;
+        const role = await authService.getUserRole();
+        userRole.value = role;
+        console.log('Auth check successful, user role:', role);
+      } else {
+        user.value = null;
+        userRole.value = null;
       }
     } catch (err) {
-      console.error('Error checking auth:', err);
+      console.error('Auth check failed:', err);
       user.value = null;
-      session.value = null;
+      userRole.value = null;
+    } finally {
+      loading.value = false;
     }
-  };
+  }
 
-  // Initialize auth state
-  checkAuth();
-
-  // Set up auth state change listener
-  supabase.auth.onAuthStateChange((_event, newSession) => {
-    user.value = newSession?.user || null;
-    session.value = newSession;
+  // Subscribe to auth state changes
+  authService.onAuthStateChange(async (newUser) => {
+    if (newUser) {
+      user.value = newUser;
+      const role = await authService.getUserRole();
+      userRole.value = role;
+      console.log('Auth state changed, new user role:', role);
+    } else {
+      user.value = null;
+      userRole.value = null;
+    }
   });
+
+  function clearError() {
+    error.value = null;
+  }
 
   return {
     // State
     user,
+    userRole,
     loading,
     error,
     
-    // Computed
+    // Getters
     isAuthenticated,
+    isAdmin,
+    isRep,
+    isDoctor,
     
     // Actions
     login,
     logout,
-    checkAuth
+    checkAuth,
+    clearError
   };
 });

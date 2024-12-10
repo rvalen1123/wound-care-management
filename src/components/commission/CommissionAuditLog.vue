@@ -1,73 +1,72 @@
 <template>
-  <div class="commission-audit-log">
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <h3 class="text-lg font-semibold mb-4">Commission Structure Audit Log</h3>
+  <Layout
+    title="Commission Audit Log"
+    :loading="loading"
+    :error="error"
+  >
+    <!-- Audit Log Table -->
+    <Card>
+      <Table
+        :columns="columns"
+        :items="auditLogs"
+      >
+        <template #date="{ item }">
+          <span class="text-gray-300">{{ formatDate(item.changed_at) }}</span>
+        </template>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+        <template #changed_by="{ item }">
+          <span class="text-gray-300">{{ item.changed_by }}</span>
+        </template>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="text-red-600 py-4">
-        {{ error }}
-      </div>
+        <template #previous_rates="{ item }">
+          <div class="space-y-1">
+            <div class="text-sm text-gray-300">
+              Master: <Badge severity="info">{{ item.previous_master_rate }}%</Badge>
+            </div>
+            <div v-if="item.previous_sub_rate" class="text-sm text-gray-300">
+              Sub: <Badge severity="info">{{ item.previous_sub_rate }}%</Badge>
+            </div>
+            <div v-if="item.previous_sub_sub_rate" class="text-sm text-gray-300">
+              Sub-Sub: <Badge severity="info">{{ item.previous_sub_sub_rate }}%</Badge>
+            </div>
+          </div>
+        </template>
 
-      <!-- Audit Log Table -->
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Changed By</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Previous Rates</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Rates</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="entry in auditLogs" :key="entry.id">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(entry.changed_at) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ entry.changed_by }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <div class="space-y-1">
-                  <div>Master: {{ entry.previous_master_rate }}%</div>
-                  <div v-if="entry.previous_sub_rate">Sub: {{ entry.previous_sub_rate }}%</div>
-                  <div v-if="entry.previous_sub_sub_rate">Sub-Sub: {{ entry.previous_sub_sub_rate }}%</div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <div class="space-y-1">
-                  <div>Master: {{ entry.new_master_rate }}%</div>
-                  <div v-if="entry.new_sub_rate">Sub: {{ entry.new_sub_rate }}%</div>
-                  <div v-if="entry.new_sub_sub_rate">Sub-Sub: {{ entry.new_sub_sub_rate }}%</div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
-                {{ entry.reason }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <template #new_rates="{ item }">
+          <div class="space-y-1">
+            <div class="text-sm text-gray-300">
+              Master: <Badge severity="success">{{ item.new_master_rate }}%</Badge>
+            </div>
+            <div v-if="item.new_sub_rate" class="text-sm text-gray-300">
+              Sub: <Badge severity="success">{{ item.new_sub_rate }}%</Badge>
+            </div>
+            <div v-if="item.new_sub_sub_rate" class="text-sm text-gray-300">
+              Sub-Sub: <Badge severity="success">{{ item.new_sub_sub_rate }}%</Badge>
+            </div>
+          </div>
+        </template>
 
-        <!-- Empty State -->
-        <div v-if="auditLogs.length === 0" class="text-center py-8 text-gray-500">
-          No changes have been made to this commission structure.
-        </div>
-      </div>
-    </div>
-  </div>
+        <template #reason="{ item }">
+          <span class="text-gray-300">{{ item.reason || '-' }}</span>
+        </template>
+
+        <template #empty>
+          <EmptyState
+            message="No changes have been made to this commission structure"
+            icon="history"
+          />
+        </template>
+      </Table>
+    </Card>
+  </Layout>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useSupabase } from '@/composables/useSupabase'
-import type { CommissionAuditLog } from '@/types/commission'
+import { ref, onMounted } from 'vue'
+import { useSupabase } from '../../composables/useSupabase'
+import type { CommissionAuditLog } from '../../types/models'
 import { format } from 'date-fns'
+import { Layout, Card, Badge, EmptyState, Table } from '../common/ui'
 
 interface Props {
   structureId: string
@@ -80,7 +79,18 @@ const auditLogs = ref<CommissionAuditLog[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+// Table columns
+const columns = [
+  { field: 'date', header: 'Date' },
+  { field: 'changed_by', header: 'Changed By' },
+  { field: 'previous_rates', header: 'Previous Rates' },
+  { field: 'new_rates', header: 'New Rates' },
+  { field: 'reason', header: 'Reason' }
+]
+
 const loadAuditLog = async () => {
+  if (!props.structureId) return
+  
   loading.value = true
   error.value = null
   
@@ -109,15 +119,6 @@ const formatDate = (dateString: string): string => {
   }
 }
 
-// Watchers
-watch(() => props.structureId, () => {
-  if (props.structureId) {
-    loadAuditLog()
-  }
-})
-
-// Initial load
-if (props.structureId) {
-  loadAuditLog()
-}
+// Load initial data
+onMounted(loadAuditLog)
 </script>

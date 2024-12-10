@@ -1,22 +1,16 @@
-declare module '@/stores/auth' {
-  interface User {
-    id: string;
-    email: string;
-    role: string;
-  }
+import type { AuthUser, UserMetadata } from './models';
 
-  interface AuthState {
-    user: User | null;
-    loading: boolean;
-    error: string | null;
-  }
-
-  export function useAuthStore(): {
-    user: User | null;
-    loading: boolean;
-    error: string | null;
-    login: (email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
-    checkAuth: () => Promise<void>;
-  };
+export interface AuthStore {
+  user: AuthUser;
+  userRole: UserMetadata | null;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isRep: boolean;
+  isDoctor: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  clearError: () => void;
 }

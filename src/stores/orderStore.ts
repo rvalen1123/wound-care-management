@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
-import type { Order, Product } from '@/types/models';
-import { supabase } from '@/lib/supabaseClient';
-import { useAuthStore } from '@/stores/auth';
-import { useRepStore } from '@/stores/repStore';
+import type { Order, Product } from '../types/models';
+import { supabase } from '../lib/supabaseClient';
+import { useAuthStore } from './auth';
+import { useRepStore } from './repStore';
 import { ref, computed } from 'vue';
 
 interface OrderState {
@@ -18,14 +18,14 @@ export const useOrderStore = defineStore('orders', () => {
 
   // Getters
   const getOrderById = computed(() => {
-    return (id: string) => orders.value.find((order: Order) => order.id === id);
+    return (id: string) => orders.value.find((order: Order) => order.order_id === id);
   });
 
   const getOrdersByStatus = computed(() => {
     return (status: string) => {
       return orders.value.filter((order: Order) => {
         if (status === 'all') return true;
-        return order.status === status;
+        return order.payment_status === status;
       });
     };
   });
@@ -87,14 +87,14 @@ export const useOrderStore = defineStore('orders', () => {
       const { data, error: err } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', id)
+        .eq('order_id', id)
         .select()
         .single();
 
       if (err) throw err;
 
       if (data) {
-        const index = orders.value.findIndex((order: Order) => order.id === id);
+        const index = orders.value.findIndex((order: Order) => order.order_id === id);
         if (index !== -1) {
           orders.value[index] = { ...orders.value[index], ...data };
         }
@@ -118,11 +118,11 @@ export const useOrderStore = defineStore('orders', () => {
       const { error: err } = await supabase
         .from('orders')
         .delete()
-        .eq('id', id);
+        .eq('order_id', id);
 
       if (err) throw err;
 
-      orders.value = orders.value.filter((order: Order) => order.id !== id);
+      orders.value = orders.value.filter((order: Order) => order.order_id !== id);
     } catch (err) {
       console.error('Error deleting order:', err);
       error.value = 'Failed to delete order';
@@ -139,7 +139,7 @@ export const useOrderStore = defineStore('orders', () => {
     product: Product; 
     units: number 
   }) {
-    const asp = product.national_asp || 0;
+    const asp = product['National ASP'] || 0;
     const invoiceAmount = asp * units;
     const mscCommission = invoiceAmount * 0.15; // 15% commission
     

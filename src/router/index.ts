@@ -21,12 +21,6 @@ const routes = [
     redirect: '/dashboard',
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
     path: '/login',
     name: 'login',
     component: () => import('../views/Login.vue'),
@@ -37,63 +31,20 @@ const routes = [
     component: () => import('../views/Register.vue'),
   },
   {
-    path: '/commissions',
-    name: 'commissions',
-    component: () => import('../views/CommissionDashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/Dashboard.vue'),
+    meta: { requiresAuth: true },
   },
+  // Orders Routes
   {
-    path: '/commissions/approval',
-    name: 'commission-approval',
-    component: () => import('../views/CommissionApproval.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  {
-    path: '/graft-orders',
-    name: 'graft-orders',
+    path: '/orders/recent',
+    name: 'recent-orders',
     component: () => import('../views/orders/OrderList.vue'),
     meta: {
       requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
-  },
-  {
-    path: '/customers',
-    name: 'customers',
-    component: () => import('../views/CustomerManagement.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
-  },
-  {
-    path: '/financial-reports',
-    name: 'financial-reports',
-    component: () => import('../views/FinancialReporting.vue'),
-    meta: {
-      requiresAuth: true,
       roles: ['admin'],
     },
-  },
-  {
-    path: '/payments',
-    name: 'payments',
-    component: () => import('../views/PaymentTracking.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  // Legacy routes for backward compatibility
-  {
-    path: '/orders',
-    redirect: '/graft-orders',
   },
   {
     path: '/orders/new',
@@ -113,6 +64,27 @@ const routes = [
       roles: ['admin', 'rep'],
     },
   },
+  // Customer/Doctor Routes
+  {
+    path: '/customers',
+    name: 'customers',
+    component: () => import('../views/CustomerManagement.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin'],
+    },
+  },
+  // Payment Routes
+  {
+    path: '/payments',
+    name: 'payments',
+    component: () => import('../views/PaymentTracking.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin', 'doctor'],
+    },
+  },
+  // Representative Routes
   {
     path: '/reps',
     name: 'reps',
@@ -122,11 +94,67 @@ const routes = [
       roles: ['admin'],
     },
   },
+  // Commission Routes
+  {
+    path: '/commissions',
+    name: 'commissions',
+    component: () => import('../views/CommissionDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin', 'rep'],
+    },
+  },
+  {
+    path: '/commissions/approval',
+    name: 'commission-approval',
+    component: () => import('../views/CommissionApproval.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin'],
+    },
+  },
+  // Reports Routes
+  {
+    path: '/reports',
+    name: 'reports',
+    component: () => import('../views/FinancialReporting.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  // Profile Routes
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('../views/CustomerProfile.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  // Doctor-specific Routes
+  {
+    path: '/orders',
+    name: 'doctor-orders',
+    component: () => import('../views/orders/OrderList.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['doctor'],
+    },
+  },
+  // Legacy redirects
   {
     path: '/doctors',
-    name: 'doctors',
     redirect: '/customers',
   },
+  {
+    path: '/financial-reports',
+    redirect: '/reports',
+  },
+  {
+    path: '/graft-orders',
+    redirect: '/orders/recent',
+  },
+  // Catch-all redirect
   {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard',
@@ -142,10 +170,8 @@ const router = createRouter({
 // Auth guard function to check authentication and roles
 interface AuthStore {
   isAuthenticated: boolean;
-  user?: {
-    user_metadata?: {
-      role?: string;
-    };
+  userRole?: {
+    role?: string;
   };
 }
 
@@ -176,7 +202,7 @@ const authGuard = (to: Route, _from: Route, next: NavigationNext): void => {
 
   // Check for role-based access
   if (to.meta?.roles) {
-    const userRole = authStore.user?.user_metadata?.role;
+    const userRole = authStore.userRole?.role;
     if (!hasRole(to.meta.roles, userRole)) {
       console.warn('Access denied: User role not authorized');
       next('/dashboard');

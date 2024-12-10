@@ -1,12 +1,13 @@
 <template>
   <div :class="[
-    'overflow-hidden bg-white',
+    theme === 'dark' ? 'bg-gray-800' : 'bg-white',
     rounded ? 'rounded-lg' : '',
-    shadow ? 'shadow-medical' : '',
+    shadow ? (theme === 'dark' ? 'shadow-xl' : 'shadow-medical') : '',
     className
   ]">
     <div v-if="$slots.header" :class="[
-      'border-b border-gray-200 px-4 py-5 sm:px-6',
+      'border-b px-4 py-5 sm:px-6',
+      theme === 'dark' ? 'border-gray-700' : 'border-gray-200',
       headerClass
     ]">
       <slot name="header" />
@@ -18,7 +19,8 @@
       <slot />
     </div>
     <div v-if="$slots.footer" :class="[
-      'border-t border-gray-200 px-4 py-4 sm:px-6',
+      'border-t px-4 py-4 sm:px-6',
+      theme === 'dark' ? 'border-gray-700' : 'border-gray-200',
       footerClass
     ]">
       <slot name="footer" />
@@ -26,33 +28,24 @@
   </div>
 </template>
 
-<script setup>
-import { defineProps } from 'vue'
+<script setup lang="ts">
+interface Props {
+  rounded?: boolean
+  shadow?: boolean
+  theme?: 'light' | 'dark'
+  className?: string
+  headerClass?: string
+  bodyClass?: string
+  footerClass?: string
+}
 
-defineProps({
-  rounded: {
-    type: Boolean,
-    default: true
-  },
-  shadow: {
-    type: Boolean,
-    default: true
-  },
-  className: {
-    type: String,
-    default: ''
-  },
-  headerClass: {
-    type: String,
-    default: ''
-  },
-  bodyClass: {
-    type: String,
-    default: ''
-  },
-  footerClass: {
-    type: String,
-    default: ''
-  }
+withDefaults(defineProps<Props>(), {
+  rounded: true,
+  shadow: true,
+  theme: 'dark',
+  className: '',
+  headerClass: '',
+  bodyClass: '',
+  footerClass: ''
 })
 </script>

@@ -98,23 +98,52 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<User | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    } catch (err) {
+      console.error('Get current user error:', err);
+      return null;
+    }
   },
 
   async getUserRole(): Promise<UserRole | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) return null;
 
-    const metadata = user.user_metadata;
-    if (!metadata?.role) return null;
+      // First try to get role from user metadata
+      if (user.user_metadata?.role) {
+        return {
+          role: user.user_metadata.role,
+          name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
+          rep_type: user.user_metadata.rep_type,
+          doctor_id: user.user_metadata.doctor_id
+        };
+      }
 
-    return {
-      role: metadata.role,
-      name: metadata.name,
-      rep_type: metadata.rep_type,
-      doctor_id: metadata.doctor_id
-    };
+      // If not in metadata, try to get from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, name, rep_type, doctor_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profile) return null;
+
+      return {
+        role: profile.role,
+        name: profile.name,
+        rep_type: profile.rep_type,
+        doctor_id: profile.doctor_id
+      };
+    } catch (err) {
+      console.error('Get user role error:', err);
+      return null;
+    }
   },
 
   onAuthStateChange(callback: (user: User | null) => void) {
