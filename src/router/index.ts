@@ -1,21 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-
-// Define a module augmentation for route meta
-declare module 'vue-router' {
-  interface RouteMeta {
-    requiresAuth?: boolean;
-    roles?: string[];
-  }
-}
+import type { RouteLocationNormalized, RouteRecordRaw, NavigationGuardNext } from '../types/router';
 
 // Utility function to check if a user has the required role
 const hasRole = (roles: string[], userRole?: string): boolean => {
-  return roles.includes(userRole || '');
+  if (!roles || !userRole) return false;
+  return roles.includes(userRole);
 };
 
-// Define the routes
-const routes = [
+// Define routes based on roles
+const routes: RouteRecordRaw[] = [
+  // Public routes
   {
     path: '/',
     redirect: '/dashboard',
@@ -24,127 +19,131 @@ const routes = [
     path: '/login',
     name: 'login',
     component: () => import('../views/Login.vue'),
+    meta: { requiresAuth: false },
   },
   {
     path: '/register',
     name: 'register',
     component: () => import('../views/Register.vue'),
+    meta: { requiresAuth: false },
   },
+
+  // Common routes (available to all authenticated users)
   {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/Dashboard.vue'),
     meta: { requiresAuth: true },
   },
-  // Orders Routes
-  {
-    path: '/orders/recent',
-    name: 'recent-orders',
-    component: () => import('../views/orders/OrderList.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  {
-    path: '/orders/new',
-    name: 'new-order',
-    component: () => import('../views/orders/OrderForm.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
-  },
-  {
-    path: '/orders/:id/edit',
-    name: 'edit-order',
-    component: () => import('../views/orders/OrderForm.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
-  },
-  // Customer/Doctor Routes
-  {
-    path: '/customers',
-    name: 'customers',
-    component: () => import('../views/CustomerManagement.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  // Payment Routes
-  {
-    path: '/payments',
-    name: 'payments',
-    component: () => import('../views/PaymentTracking.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'doctor'],
-    },
-  },
-  // Representative Routes
-  {
-    path: '/reps',
-    name: 'reps',
-    component: () => import('../views/rep/RepDashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  // Commission Routes
-  {
-    path: '/commissions',
-    name: 'commissions',
-    component: () => import('../views/CommissionDashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin', 'rep'],
-    },
-  },
-  {
-    path: '/commissions/approval',
-    name: 'commission-approval',
-    component: () => import('../views/CommissionApproval.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['admin'],
-    },
-  },
-  // Reports Routes
-  {
-    path: '/reports',
-    name: 'reports',
-    component: () => import('../views/FinancialReporting.vue'),
-    meta: {
-      requiresAuth: true,
-    },
-  },
-  // Profile Routes
   {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/CustomerProfile.vue'),
-    meta: {
-      requiresAuth: true,
-    },
+    meta: { requiresAuth: true },
   },
-  // Doctor-specific Routes
+
+  // Admin-only routes
   {
-    path: '/orders',
-    name: 'doctor-orders',
-    component: () => import('../views/orders/OrderList.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['doctor'],
-    },
+    path: '/admin/customers',
+    name: 'customer-management',
+    component: () => import('../views/CustomerManagement.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
   },
+  {
+    path: '/admin/manufacturers',
+    name: 'manufacturer-management',
+    component: () => import('../views/ManufacturerManagement.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/commission-structure',
+    name: 'commission-structure',
+    component: () => import('../views/CommissionStructureManagement.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/commission-approval',
+    name: 'commission-approval',
+    component: () => import('../views/CommissionApproval.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/analytics',
+    name: 'analytics',
+    component: () => import('../views/Analytics.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/orders',
+    name: 'all-orders',
+    component: () => import('../views/orders/OrderList.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+
+  // Rep routes
+  {
+    path: '/rep/dashboard',
+    name: 'rep-dashboard',
+    component: () => import('../views/rep/RepDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['rep'] },
+  },
+  {
+    path: '/rep/commissions',
+    name: 'rep-commissions',
+    component: () => import('../views/CommissionDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['rep'] },
+  },
+  {
+    path: '/rep/doctors',
+    name: 'my-doctors',
+    component: () => import('../views/MyDoctors.vue'),
+    meta: { requiresAuth: true, roles: ['rep'] },
+  },
+  {
+    path: '/rep/stats',
+    name: 'my-stats',
+    component: () => import('../views/MyStats.vue'),
+    meta: { requiresAuth: true, roles: ['rep'] },
+  },
+  {
+    path: '/rep/orders/new',
+    name: 'new-order',
+    component: () => import('../views/orders/OrderForm.vue'),
+    meta: { requiresAuth: true, roles: ['rep'] },
+  },
+
+  // Doctor routes
+  {
+    path: '/doctor/orders',
+    name: 'my-orders',
+    component: () => import('../views/orders/OrderList.vue'),
+    meta: { requiresAuth: true, roles: ['doctor'] },
+  },
+  {
+    path: '/doctor/payments',
+    name: 'payment-tracking',
+    component: () => import('../views/PaymentTracking.vue'),
+    meta: { requiresAuth: true, roles: ['doctor'] },
+  },
+
+  // Shared routes (available to multiple roles)
+  {
+    path: '/orders/:id',
+    name: 'order-details',
+    component: () => import('../components/orders/OrderDetails.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/reports',
+    name: 'reports',
+    component: () => import('../views/FinancialReporting.vue'),
+    meta: { requiresAuth: true },
+  },
+
   // Legacy redirects
   {
     path: '/doctors',
-    redirect: '/customers',
+    redirect: '/admin/customers',
   },
   {
     path: '/financial-reports',
@@ -152,8 +151,9 @@ const routes = [
   },
   {
     path: '/graft-orders',
-    redirect: '/orders/recent',
+    redirect: '/admin/orders',
   },
+
   // Catch-all redirect
   {
     path: '/:pathMatch(.*)*',
@@ -167,29 +167,35 @@ const router = createRouter({
   routes,
 });
 
-// Auth guard function to check authentication and roles
-interface AuthStore {
-  isAuthenticated: boolean;
-  userRole?: {
-    role?: string;
-  };
-}
+// Add the navigation guard
+router.beforeEach(async (
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) => {
+  const authStore = useAuthStore();
 
-interface Route {
-  path: string;
-  name?: string;
-  fullPath: string;
-  meta?: {
-    requiresAuth?: boolean;
-    roles?: string[];
-  };
-}
+  // Wait for auth check to complete
+  if (authStore.loading) {
+    await new Promise(resolve => {
+      const checkLoading = setInterval(() => {
+        if (!authStore.loading) {
+          clearInterval(checkLoading);
+          resolve(true);
+        }
+      }, 100);
+    });
+  }
 
-type NavigationNext = (to?: string | { name: string; query: Record<string, string> }) => void;
-
-// Add the navigation guard with proper type annotations
-const authGuard = (to: Route, _from: Route, next: NavigationNext): void => {
-  const authStore: AuthStore = useAuthStore();
+  // Handle auth routes (login/register)
+  if (to.meta?.requiresAuth === false) {
+    if (authStore.isAuthenticated) {
+      next('/dashboard');
+      return;
+    }
+    next();
+    return;
+  }
 
   // Check if route requires authentication
   if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
@@ -210,17 +216,7 @@ const authGuard = (to: Route, _from: Route, next: NavigationNext): void => {
     }
   }
 
-  // If user is authenticated and trying to access login/register, redirect to dashboard
-  if (authStore.isAuthenticated && ['/login', '/register'].includes(to.path)) {
-    next('/dashboard');
-    return;
-  }
-
   next();
-};
+});
 
-// Apply the auth guard
-router.beforeEach(authGuard);
-
-// Export the router
 export default router;
