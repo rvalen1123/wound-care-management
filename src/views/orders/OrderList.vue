@@ -188,6 +188,21 @@
                 Showing
                 <span class="font-medium">{{ startIndex + 1 }}</span>
                 to
+                <span class="font-medium">{{ endIndex }}</span>
+                of
+                <span class="font-medium">{{ totalOrders }}</span>
+                results
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <OrderDetailsModal
+      v-if="selectedOrder"
+      :order="selectedOrder"
       @close="selectedOrder = null"
     />
   </Layout>
@@ -199,12 +214,20 @@ import Layout from '@/components/common/ui/Layout.vue';
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue';
 import { dataService } from '@/services/data.service';
 import type { Order } from '@/types/models';
+import { PlusIcon } from '@heroicons/vue/20/solid';
+import { useAuthStore } from '@/stores/auth';
 
+const authStore = useAuthStore();
 const loading = ref(true);
 const error = ref<string | null>(null);
 const orders = ref<Order[]>([]);
 const selectedOrder = ref<Order | null>(null);
 const totalOrders = ref(0);
+
+// Computed
+const isAdmin = computed(() => authStore.isAdmin);
+const canCreateOrders = computed(() => authStore.isAdmin || authStore.isRep);
+const viewTitle = computed(() => isAdmin.value ? 'All Orders' : 'My Orders');
 
 // Pagination
 const currentPage = ref(1);
@@ -213,7 +236,9 @@ const pageSize = 10;
 // Filters and Sorting
 const filters = ref({
   status: '',
-  dateRange: '30'
+  dateRange: '30',
+  doctorId: '',
+  repId: ''
 });
 const sortBy = ref('date_of_service');
 const sortDesc = ref(true);
@@ -257,7 +282,9 @@ const loadOrders = async () => {
       sortDesc: sortDesc.value,
       filters: {
         status: filters.value.status || undefined,
-        date_range: filters.value.dateRange
+        date_range: filters.value.dateRange,
+        doctor_id: filters.value.doctorId || undefined,
+        rep_id: filters.value.repId || undefined
       }
     });
 
