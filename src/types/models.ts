@@ -1,159 +1,108 @@
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-
-// Base Types
-export interface BaseModel {
-  created_at?: string;
-  updated_at?: string;
-}
-
-// Auth Types
-export interface UserMetadata {
+export interface User {
+  id: string;
+  email: string;
   role: 'admin' | 'rep' | 'doctor';
   name: string;
-  rep_type?: 'master' | 'sub' | 'sub-sub';
-  doctor_id?: string;
+  status: 'active' | 'inactive';
 }
 
-export interface User extends Omit<SupabaseUser, 'user_metadata'> {
-  user_metadata: UserMetadata;
-}
-
-export type AuthUser = User | null;
-
-// Rep Types
-export interface Representative extends BaseModel {
+export interface Representative {
   id: string;
   name: string;
   email: string;
-  status: 'active' | 'inactive';
   role: 'master' | 'sub' | 'sub-sub';
-  parent_id?: string | null;
-  // Calculated fields
-  totalSales?: number;
-  totalCommission?: number;
-  accountCount?: number;
-  subRepCount?: number;
+  parent_id?: string;
+  parent?: Representative;
+  commission_rate: number;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at?: string;
+  commission_agreements?: CommissionAgreement[];
 }
 
-export interface RepRelationship extends BaseModel {
-  id: string;
-  parent_rep_id: string;
-  child_rep_id: string;
-  commission_split: number;
-  start_date: string;
-  end_date?: string;
-  status: 'pending' | 'active' | 'inactive';
-  // Populated fields
-  parent_rep?: Representative;
-  child_rep?: Representative;
-}
-
-// Order Types
-export type OrderStatus = 'pending' | 'approved' | 'rejected' | 'paid' | 'partial' | 'outstanding';
-
-export interface Order extends BaseModel {
-  order_id: string;
-  doctor_id: string;
-  q_code: string;
-  date_of_service: string;
-  credit_terms: string;
-  graph_size: string;
-  units: number;
-  invoice_amount_billed: number;
-  invoice_to_doc: number;
-  expected_collection_date: string;
-  manufacturer_paid_date: string;
-  amount_paid_to_manufacturer: number;
-  running_balance_owed: number;
-  manufacturer_payment_status: string | null;
-  msc_commission_str: string;
-  msc_paid_date: string;
-  msc_commission: number | null;
-  payment_status: string;
-  status: OrderStatus;
-  master_rep_id?: string;
-  sub_rep_id?: string;
-  sub_sub_rep_id?: string;
-  commission_structure?: any;
-  // Populated fields
-  doctor?: Doctor;
-  master_rep?: Representative;
-  sub_rep?: Representative;
-  sub_sub_rep?: Representative;
-}
-
-export interface Doctor extends BaseModel {
+export interface Product {
   id: string;
   name: string;
-  business_name?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  default_credit_terms?: string;
+  'National ASP': number;
+  sizes: string[];
+  commission_rate: number;
+  manufacturer_id: string;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface Analytics {
-  totalSales: number;
-  totalCommissions: number;
-  topReps: Array<{
-    id: string;
-    name: string;
-    totalSales: number;
-  }>;
+export interface Order {
+  order_id: string;
+  doctor_id: string;
+  product_id: string;
+  date_of_service: string;
+  size: string;
+  units: number;
+  invoice_to_doc: number;
+  msc_commission: number;
+  expected_collection_date: string;
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  master_rep_id: string;
+  sub_rep_id?: string;
+  sub_sub_rep_id?: string;
+  commission_structure: {
+    master: number;
+    sub: number;
+    subSub: number;
+  };
+  created_by: string;
+  created_at: string;
+  updated_by?: string;
+  updated_at?: string;
 }
 
-export interface DashboardMetrics {
-  owedByDoctors: number;
-  owedToManufacturers: number;
-  owedInCommissions: number;
-  totalDoctors: number;
-  totalProducts: number;
-  totalReps: number;
-}
-
-// Commission Types
-export interface CommissionAuditLog extends BaseModel {
+export interface CommissionAgreement {
   id: string;
-  structure_id: string;
-  changed_by: string;
-  changed_at: string;
-  previous_master_rate: number;
-  previous_sub_rate?: number;
-  previous_sub_sub_rate?: number;
-  new_master_rate: number;
-  new_sub_rate?: number;
-  new_sub_sub_rate?: number;
-  reason?: string;
-  // Populated fields
-  changed_by_user?: User;
+  rep_id: string;
+  commission_rate: number;
+  effective_date: string;
+  end_date?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
-// Commission Calculation Types
+export interface Doctor {
+  id: string;
+  name: string;
+  email: string;
+  specialty: string;
+  primary_rep_id: string;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CommissionStructure {
+  id: string;
+  product_id: string;
+  rep_type: 'master' | 'sub' | 'sub-sub';
+  commission_rate: number;
+  effective_date: string;
+  end_date?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  table_name: string;
+  record_id: string;
+  action: 'insert' | 'update' | 'delete';
+  old_data?: Record<string, any>;
+  new_data?: Record<string, any>;
+  user_id: string;
+  created_at: string;
+}
+
 export interface CommissionCalculation {
-  base_amount: number;
-  splits: {
-    rep_id: string;
-    percentage: number;
-    amount: number;
-  }[];
-  total_splits: number;
-  final_amount: number;
-}
-
-// Dashboard Types
-export interface CommissionSummary {
-  direct_commission: number;
-  indirect_commission: number;
-  pending_commission: number;
-  total_commission: number;
-  commission_by_period: {
-    period: string;
-    amount: number;
-  }[];
-}
-
-export interface RepHierarchyNode {
-  rep: Representative;
-  commission_split: number;
-  children: RepHierarchyNode[];
+  master: number;
+  sub: number;
+  subSub: number;
+  total: number;
 }

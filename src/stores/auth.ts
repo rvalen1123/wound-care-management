@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { authService } from '../services/auth.service';
 import type { User } from '@supabase/supabase-js';
 import type { UserRole } from '../services/auth.service';
+import { useRouter } from 'vue-router';
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -10,6 +11,10 @@ export const useAuthStore = defineStore('auth', () => {
   const userRole = ref<UserRole | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const authChecked = ref(false);
+
+  // Router instance
+  const router = useRouter();
 
   // Getters
   const isAuthenticated = computed(() => !!user.value);
@@ -43,6 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'An error occurred';
+      throw err; // Propagate error to component for handling
     } finally {
       loading.value = false;
     }
@@ -53,12 +59,21 @@ export const useAuthStore = defineStore('auth', () => {
       await authService.signOut();
       user.value = null;
       userRole.value = null;
+      // Clear auth check status
+      authChecked.value = false;
+      // Navigate to login page
+      router.push('/login');
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Logout failed';
+      throw err;
     }
   }
 
   async function checkAuth() {
+    if (authChecked.value && user.value) {
+      return; // Skip if already checked and authenticated
+    }
+
     try {
       loading.value = true;
       const currentUser = await authService.getCurrentUser();
@@ -76,19 +91,31 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('Auth check failed:', err);
       user.value = null;
       userRole.value = null;
+      throw err;
     } finally {
+      authChecked.value = true;
       loading.value = false;
     }
   }
 
   // Subscribe to auth state changes
   authService.onAuthStateChange(async (newUser) => {
-    if (newUser) {
-      user.value = newUser;
-      const role = await authService.getUserRole();
-      userRole.value = role;
-      console.log('Auth state changed, new user role:', role);
-    } else {
+    try {
+      if (newUser) {
+        user.value = newUser;
+        const role = await authService.getUserRole();
+        userRole.value = role;
+        console.log('Auth state changed, new user role:', role);
+      } else {
+        user.value = null;
+        userRole.value = null;
+        // If logged out, redirect to login page
+        if (router.currentRoute.value.meta.requiresAuth) {
+          router.push('/login');
+        }
+      }
+    } catch (err) {
+      console.error('Auth state change error:', err);
       user.value = null;
       userRole.value = null;
     }
@@ -104,6 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
     userRole,
     loading,
     error,
+    authChecked,
     
     // Getters
     isAuthenticated,

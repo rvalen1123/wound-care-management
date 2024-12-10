@@ -167,7 +167,7 @@ const router = createRouter({
   routes,
 });
 
-// Add the navigation guard
+// Improved navigation guard with proper async handling
 router.beforeEach(async (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
@@ -175,48 +175,46 @@ router.beforeEach(async (
 ) => {
   const authStore = useAuthStore();
 
-  // Wait for auth check to complete
-  if (authStore.loading) {
-    await new Promise(resolve => {
-      const checkLoading = setInterval(() => {
-        if (!authStore.loading) {
-          clearInterval(checkLoading);
-          resolve(true);
-        }
-      }, 100);
-    });
-  }
-
-  // Handle auth routes (login/register)
-  if (to.meta?.requiresAuth === false) {
-    if (authStore.isAuthenticated) {
-      next('/dashboard');
-      return;
+  try {
+    // Only check auth if not already checked
+    if (!authStore.authChecked) {
+      await authStore.checkAuth();
     }
-    next();
-    return;
-  }
 
-  // Check if route requires authentication
-  if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
-    next({
+    // Handle auth routes (login/register)
+    if (to.meta?.requiresAuth === false) {
+      if (authStore.isAuthenticated) {
+        return next('/dashboard');
+      }
+      return next();
+    }
+
+    // Check if route requires authentication
+    if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
+      return next({
+        name: 'login',
+        query: { redirect: to.fullPath },
+      });
+    }
+
+    // Check for role-based access
+    if (to.meta?.roles) {
+      const userRole = authStore.userRole?.role;
+      if (!hasRole(to.meta.roles, userRole)) {
+        console.warn('Access denied: User role not authorized');
+        return next('/dashboard');
+      }
+    }
+
+    next();
+  } catch (error) {
+    console.error('Navigation guard error:', error);
+    // On error, redirect to login
+    return next({
       name: 'login',
       query: { redirect: to.fullPath },
     });
-    return;
   }
-
-  // Check for role-based access
-  if (to.meta?.roles) {
-    const userRole = authStore.userRole?.role;
-    if (!hasRole(to.meta.roles, userRole)) {
-      console.warn('Access denied: User role not authorized');
-      next('/dashboard');
-      return;
-    }
-  }
-
-  next();
 });
 
 export default router;

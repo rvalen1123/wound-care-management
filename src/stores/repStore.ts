@@ -1,26 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import type { Representative, CommissionAgreement } from '@/types/rep';
-
-interface RepProfile {
-  id: string;
-  name: string;
-  default_commission_rate: number;
-}
-
-interface RecentOrder {
-  id: string;
-  date_of_service: string;
-  doctor: {
-    name: string;
-  };
-  product: {
-    name: string;
-  };
-  commission_amount: number;
-  status: string;
-}
+import type { Representative, CommissionAgreement } from '@/types/models';
 
 export const useRepStore = defineStore('reps', () => {
   const reps = ref<Representative[]>([]);
@@ -31,7 +12,7 @@ export const useRepStore = defineStore('reps', () => {
   const lastYearCommission = ref(0);
   const monthlyOrders = ref<number[]>([]);
   const monthlyCommission = ref<number[]>([]);
-  const recentOrders = ref<RecentOrder[]>([]);
+  const recentOrders = ref<any[]>([]);
 
   // Getters
   const getRepById = computed(() => {
@@ -54,10 +35,6 @@ export const useRepStore = defineStore('reps', () => {
     );
   });
 
-  const getYTDCommission = computed(() => {
-    return () => ytdCommission.value;
-  });
-
   // Actions
   async function fetchReps() {
     loading.value = true;
@@ -66,7 +43,11 @@ export const useRepStore = defineStore('reps', () => {
     try {
       const { data, error: err } = await supabase
         .from('representatives')
-        .select('*')
+        .select(`
+          *,
+          parent:parent_id(id, name),
+          commission_agreements(*)
+        `)
         .order('name');
 
       if (err) throw err;
@@ -75,6 +56,93 @@ export const useRepStore = defineStore('reps', () => {
     } catch (err) {
       console.error('Error fetching reps:', err);
       error.value = 'Failed to fetch representatives';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function createRep(repData: Partial<Representative>) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const { data, error: err } = await supabase
+        .from('representatives')
+        .insert([{
+          ...repData,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (err) throw err;
+
+      if (data) {
+        reps.value.push(data);
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Error creating rep:', err);
+      error.value = 'Failed to create representative';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function updateRep(id: string, updates: Partial<Representative>) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const { data, error: err } = await supabase
+        .from('representatives')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (err) throw err;
+
+      if (data) {
+        const index = reps.value.findIndex(rep => rep.id === id);
+        if (index !== -1) {
+          reps.value[index] = { ...reps.value[index], ...data };
+        }
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Error updating rep:', err);
+      error.value = 'Failed to update representative';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function deleteRep(id: string) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const { error: err } = await supabase
+        .from('representatives')
+        .delete()
+        .eq('id', id);
+
+      if (err) throw err;
+
+      reps.value = reps.value.filter(rep => rep.id !== id);
+    } catch (err) {
+      console.error('Error deleting rep:', err);
+      error.value = 'Failed to delete representative';
+      throw err;
     } finally {
       loading.value = false;
     }
@@ -102,85 +170,6 @@ export const useRepStore = defineStore('reps', () => {
     }
   }
 
-  async function fetchRecentOrders() {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: err } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          date_of_service,
-          doctor:doctor_id(name),
-          product:product_id(name),
-          commission_amount,
-          status
-        `)
-        .order('date_of_service', { ascending: false })
-        .limit(10);
-
-      if (err) throw err;
-
-      recentOrders.value = data || [];
-    } catch (err) {
-      console.error('Error fetching recent orders:', err);
-      error.value = 'Failed to fetch recent orders';
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  function getRecentOrders() {
-    return recentOrders.value;
-  }
-
-  function getCurrentMonthOrders() {
-    return monthlyOrders.value[monthlyOrders.value.length - 1] || 0;
-  }
-
-  function getCurrentMonthCommission() {
-    return monthlyCommission.value[monthlyCommission.value.length - 1] || 0;
-  }
-
-  function getCurrentRepProfile(): RepProfile | null {
-    // Implementation depends on your authentication setup
-    return {
-      id: '1',
-      name: 'Test Rep',
-      default_commission_rate: 15
-    };
-  }
-
-  async function generateCommissionReport(startDate: string, endDate: string) {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: err } = await supabase
-        .from('orders')
-        .select(`
-          date_of_service,
-          doctor:doctor_id(name),
-          product:product_id(name),
-          commission_amount
-        `)
-        .gte('date_of_service', startDate)
-        .lte('date_of_service', endDate)
-        .order('date_of_service', { ascending: false });
-
-      if (err) throw err;
-
-      return data || [];
-    } catch (err) {
-      console.error('Error generating commission report:', err);
-      error.value = 'Failed to generate commission report';
-      return [];
-    } finally {
-      loading.value = false;
-    }
-  }
-
   // Helper functions
   function calculateYTDCommission(commissionData: any[]): number {
     const currentYear = new Date().getFullYear();
@@ -190,8 +179,17 @@ export const useRepStore = defineStore('reps', () => {
   }
 
   function calculateMonthlyCommission(commissionData: any[]): number[] {
-    // Implementation for monthly commission calculation
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const months = Array(12).fill(0);
+    const currentYear = new Date().getFullYear();
+
+    commissionData.forEach(commission => {
+      const date = new Date(commission.created_at);
+      if (date.getFullYear() === currentYear) {
+        months[date.getMonth()] += commission.amount || 0;
+      }
+    });
+
+    return months;
   }
 
   return {
@@ -208,14 +206,10 @@ export const useRepStore = defineStore('reps', () => {
     getRepsByRole,
     getSubReps,
     getSubSubReps,
-    getYTDCommission,
-    getRecentOrders,
-    getCurrentMonthOrders,
-    getCurrentMonthCommission,
-    getCurrentRepProfile,
     fetchReps,
-    fetchRepCommissions,
-    fetchRecentOrders,
-    generateCommissionReport
+    createRep,
+    updateRep,
+    deleteRep,
+    fetchRepCommissions
   };
 });

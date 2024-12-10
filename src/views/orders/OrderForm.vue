@@ -16,10 +16,17 @@
         </div>
       </template>
 
+      <!-- Error Message -->
+      <div v-if="formError" class="mb-4">
+        <Message severity="error" :closable="true" @close="formError = null">
+          {{ formError }}
+        </Message>
+      </div>
+
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="space-y-6">
+        <!-- Doctor and Product Selection -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Doctor Selection -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Doctor *</label>
             <Dropdown
@@ -28,12 +35,15 @@
               optionLabel="name"
               optionValue="id"
               placeholder="Select Doctor"
-              :error="v$.doctor_id.$error ? v$.doctor_id.$errors[0].$message : ''"
+              :class="{ 'p-invalid': v$.doctor_id.$error }"
               class="w-full"
+              :disabled="loading"
             />
+            <small class="text-red-500" v-if="v$.doctor_id.$error">
+              {{ v$.doctor_id.$errors[0].$message }}
+            </small>
           </div>
 
-          <!-- Product Selection -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Product *</label>
             <Dropdown
@@ -42,15 +52,19 @@
               optionLabel="name"
               optionValue="id"
               placeholder="Select Product"
-              :error="v$.product_id.$error ? v$.product_id.$errors[0].$message : ''"
+              :class="{ 'p-invalid': v$.product_id.$error }"
               class="w-full"
+              :disabled="loading"
               @change="handleProductChange"
             />
+            <small class="text-red-500" v-if="v$.product_id.$error">
+              {{ v$.product_id.$errors[0].$message }}
+            </small>
           </div>
         </div>
 
+        <!-- Service Date and Size -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Service Date -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Date of Service *</label>
             <Calendar
@@ -58,42 +72,50 @@
               :showIcon="true"
               :maxDate="new Date()"
               dateFormat="yy-mm-dd"
-              :error="v$.date_of_service.$error ? v$.date_of_service.$errors[0].$message : ''"
+              :class="{ 'p-invalid': v$.date_of_service.$error }"
               class="w-full"
+              :disabled="loading"
             />
+            <small class="text-red-500" v-if="v$.date_of_service.$error">
+              {{ v$.date_of_service.$errors[0].$message }}
+            </small>
           </div>
 
-          <!-- Size Selection -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Size *</label>
             <Dropdown
               v-model="formData.size"
               :options="selectedProduct?.sizes || []"
               placeholder="Select Size"
-              :error="v$.size.$error ? v$.size.$errors[0].$message : ''"
+              :class="{ 'p-invalid': v$.size.$error }"
               class="w-full"
+              :disabled="!selectedProduct || loading"
               @change="handleSizeChange"
-              :disabled="!selectedProduct"
             />
+            <small class="text-red-500" v-if="v$.size.$error">
+              {{ v$.size.$errors[0].$message }}
+            </small>
           </div>
         </div>
 
+        <!-- Units and Invoice Amount -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Units -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Units *</label>
             <InputNumber
               v-model="formData.units"
               :minFractionDigits="2"
               :maxFractionDigits="2"
-              :error="v$.units.$error ? v$.units.$errors[0].$message : ''"
+              :class="{ 'p-invalid': v$.units.$error }"
               class="w-full"
+              :disabled="!selectedProduct || loading"
               @input="handleUnitsChange"
-              :disabled="!selectedProduct"
             />
+            <small class="text-red-500" v-if="v$.units.$error">
+              {{ v$.units.$errors[0].$message }}
+            </small>
           </div>
 
-          <!-- Invoice Amount -->
           <div class="flex flex-col">
             <label class="mb-1 text-sm text-gray-600">Invoice Amount</label>
             <InputNumber
@@ -105,16 +127,15 @@
               disabled
             />
             <small class="text-gray-500">
-              Automatically calculated as 60% of ASP
+              Automatically calculated based on product ASP
             </small>
           </div>
         </div>
 
-        <!-- Rep Selection -->
+        <!-- Rep Assignment -->
         <div class="bg-gray-50 p-4 rounded-lg">
           <h3 class="text-lg font-medium text-gray-700 mb-4">Rep Assignment</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Master Rep -->
             <div class="flex flex-col">
               <label class="mb-1 text-sm text-gray-600">Master Rep *</label>
               <Dropdown
@@ -123,13 +144,16 @@
                 optionLabel="name"
                 optionValue="id"
                 placeholder="Select Master Rep"
-                :error="v$.master_rep_id.$error ? v$.master_rep_id.$errors[0].$message : ''"
+                :class="{ 'p-invalid': v$.master_rep_id.$error }"
                 class="w-full"
+                :disabled="loading"
                 @change="handleMasterRepChange"
               />
+              <small class="text-red-500" v-if="v$.master_rep_id.$error">
+                {{ v$.master_rep_id.$errors[0].$message }}
+              </small>
             </div>
 
-            <!-- Sub Rep -->
             <div class="flex flex-col">
               <label class="mb-1 text-sm text-gray-600">Sub Rep</label>
               <Dropdown
@@ -139,12 +163,11 @@
                 optionValue="id"
                 placeholder="Select Sub Rep"
                 class="w-full"
-                :disabled="!formData.master_rep_id"
+                :disabled="!formData.master_rep_id || loading"
                 @change="handleSubRepChange"
               />
             </div>
 
-            <!-- Sub-Sub Rep -->
             <div class="flex flex-col">
               <label class="mb-1 text-sm text-gray-600">Sub-Sub Rep</label>
               <Dropdown
@@ -154,58 +177,24 @@
                 optionValue="id"
                 placeholder="Select Sub-Sub Rep"
                 class="w-full"
-                :disabled="!formData.sub_rep_id"
+                :disabled="!formData.sub_rep_id || loading"
               />
             </div>
           </div>
         </div>
 
         <!-- Commission Information -->
-        <div class="bg-gray-50 p-4 rounded-lg mt-6">
-          <h3 class="text-lg font-medium text-gray-700 mb-4">Commission Details</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- MSC Commission -->
-            <div class="flex flex-col">
-              <label class="mb-1 text-sm text-gray-600">MSC Commission</label>
-              <InputNumber
-                v-model="formData.msc_commission"
-                mode="currency"
-                currency="USD"
-                :minFractionDigits="2"
-                class="w-full"
-                disabled
-              />
-              <small class="text-gray-500">
-                Based on product's default commission rate
-              </small>
-            </div>
-
-            <!-- Expected Collection Date -->
-            <div class="flex flex-col">
-              <label class="mb-1 text-sm text-gray-600">Expected Collection Date</label>
-              <Calendar
-                v-model="formData.expected_collection_date"
-                :showIcon="true"
-                dateFormat="yy-mm-dd"
-                class="w-full"
-                disabled
-              />
-              <small class="text-gray-500">
-                Automatically set to 60 days from service date
-              </small>
-            </div>
-          </div>
-
-          <!-- Rep Commission Breakdown -->
-          <OrderCommissionBreakdown
-            v-if="formData.msc_commission > 0"
-            :commission-amount="formData.msc_commission"
-            :master-rep-id="formData.master_rep_id"
-            :sub-rep-id="formData.sub_rep_id"
-            :sub-sub-rep-id="formData.sub_sub_rep_id"
-            :product="selectedProduct"
-          />
-        </div>
+        <OrderCommissionBreakdown
+          v-if="formData.msc_commission > 0"
+          :commission-amount="formData.msc_commission"
+          :master-rep-id="formData.master_rep_id"
+          :sub-rep-id="formData.sub_rep_id"
+          :sub-sub-rep-id="formData.sub_sub_rep_id"
+          :master-rep="selectedMasterRep"
+          :sub-rep="selectedSubRep"
+          :sub-sub-rep="selectedSubSubRep"
+          ref="commissionBreakdown"
+        />
 
         <!-- Form Actions -->
         <div class="flex justify-end space-x-4 pt-6">
@@ -215,16 +204,21 @@
             severity="secondary"
             text
             @click="router.back()"
+            :disabled="loading"
           />
           <Button
             type="submit"
             :label="isEditing ? 'Update Order' : 'Create Order'"
             :loading="loading"
             severity="success"
+            :disabled="!isValid || loading"
           />
         </div>
       </form>
     </Card>
+
+    <!-- Success Toast -->
+    <Toast position="bottom-right" />
   </div>
 </template>
 
@@ -237,12 +231,15 @@ import { useOrderStore } from '@/stores/orderStore';
 import { useDoctorStore } from '@/stores/doctorStore';
 import { useProductStore } from '@/stores/productStore';
 import { useRepStore } from '@/stores/repStore';
+import { commissionService } from '@/services/commission.service';
 import type { Order, Product, Representative } from '@/types/models';
-import { Card, Button, Dropdown, Calendar, InputNumber } from '@/components/common/ui';
-import OrderCommissionBreakdown from '@/components/orders/OrderCommissionBreakdown.vue';
+import OrderCommissionBreakdown from '@/components/commission/OrderCommissionBreakdown.vue';
+import { Card, Button, Dropdown, Calendar, InputNumber, Message, Toast } from 'primevue/components';
+import { useToast } from 'primevue/usetoast';
 
 const router = useRouter();
 const route = useRoute();
+const toast = useToast();
 const orderStore = useOrderStore();
 const doctorStore = useDoctorStore();
 const productStore = useProductStore();
@@ -250,11 +247,13 @@ const repStore = useRepStore();
 
 // State
 const loading = ref(false);
+const formError = ref<string | null>(null);
 const selectedProduct = ref<Product | null>(null);
+const commissionBreakdown = ref<InstanceType<typeof OrderCommissionBreakdown> | null>(null);
 
 const formData = ref<Partial<Order>>({
-  doctor_id: null,
-  product_id: null,
+  doctor_id: '',
+  product_id: '',
   date_of_service: null,
   size: '',
   units: 0,
@@ -262,9 +261,14 @@ const formData = ref<Partial<Order>>({
   msc_commission: 0,
   expected_collection_date: null,
   status: 'pending',
-  master_rep_id: null,
+  master_rep_id: '',
   sub_rep_id: null,
-  sub_sub_rep_id: null
+  sub_sub_rep_id: null,
+  commission_structure: {
+    master: 0,
+    sub: 0,
+    subSub: 0
+  }
 });
 
 // Computed
@@ -283,6 +287,18 @@ const subSubReps = computed(() =>
     : []
 );
 
+const selectedMasterRep = computed((): Representative | undefined => 
+  masterReps.value.find((rep: Representative) => rep.id === formData.value.master_rep_id)
+);
+
+const selectedSubRep = computed((): Representative | undefined => 
+  subReps.value.find((rep: Representative) => rep.id === formData.value.sub_rep_id)
+);
+
+const selectedSubSubRep = computed((): Representative | undefined => 
+  subSubReps.value.find((rep: Representative) => rep.id === formData.value.sub_sub_rep_id)
+);
+
 // Validation rules
 const rules = {
   doctor_id: { required },
@@ -295,21 +311,57 @@ const rules = {
 
 const v$ = useVuelidate(rules, formData);
 
+const isValid = computed(() => {
+  return !v$.$invalid && formData.value.units > 0;
+});
+
 // Methods
 async function handleSubmit() {
-  const isValid = await v$.$validate();
-  if (!isValid) return;
-
+  formError.value = null;
+  
   try {
     loading.value = true;
-    if (isEditing.value) {
-      await orderStore.updateOrder(route.params.id as string, formData.value);
-    } else {
-      await orderStore.createOrder(formData.value);
+    const isValid = await v$.value.$validate();
+    if (!isValid) return;
+
+    // Get commission structure from breakdown component
+    const commissionStructure = commissionBreakdown.value?.getCommissionStructure();
+    if (!commissionStructure) {
+      throw new Error('Failed to calculate commission structure');
     }
+
+    const orderData = {
+      ...formData.value,
+      commission_structure: commissionStructure
+    };
+
+    if (isEditing.value) {
+      await orderStore.updateOrder(route.params.id as string, orderData);
+      toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Order updated successfully',
+        life: 3000
+      });
+    } else {
+      await orderStore.createOrder(orderData);
+      toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Order created successfully',
+        life: 3000
+      });
+    }
+    
     router.push('/orders');
   } catch (error) {
-    // Error handling is done in the store
+    formError.value = error instanceof Error ? error.message : 'An error occurred while saving the order';
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: formError.value,
+      life: 5000
+    });
   } finally {
     loading.value = false;
   }
@@ -323,6 +375,7 @@ function handleProductChange() {
       (p: Product) => p.id === formData.value.product_id
     ) || null;
 
+  // Reset dependent fields
   formData.value.size = '';
   formData.value.units = 0;
   calculateOrderValues();
@@ -337,14 +390,15 @@ function handleUnitsChange() {
 }
 
 function handleMasterRepChange() {
+  // Reset dependent fields
   formData.value.sub_rep_id = null;
   formData.value.sub_sub_rep_id = null;
-  calculateCommission();
+  calculateOrderValues();
 }
 
 function handleSubRepChange() {
   formData.value.sub_sub_rep_id = null;
-  calculateCommission();
+  calculateOrderValues();
 }
 
 function calculateOrderValues() {
@@ -359,38 +413,45 @@ function calculateOrderValues() {
   formData.value.msc_commission = calculations.mscCommission;
   formData.value.expected_collection_date = calculations.expectedCollectionDate;
 
-  calculateCommission();
-}
-
-function calculateCommission() {
-  if (!formData.value.msc_commission) return;
-
-  const commissionStructure = orderStore.calculateCommissionStructure({
-    mscCommission: formData.value.msc_commission,
-    masterRepId: formData.value.master_rep_id,
-    subRepId: formData.value.sub_rep_id,
-    subSubRepId: formData.value.sub_sub_rep_id
-  });
-
-  // Commission structure will be saved along with the order
-  formData.value.commission_structure = commissionStructure;
+  // Update commission structure
+  if (formData.value.master_rep_id) {
+    const commissionStructure = commissionService.calculateCommissionStructure(
+      calculations.invoiceAmount,
+      formData.value.master_rep_id,
+      formData.value.sub_rep_id,
+      formData.value.sub_sub_rep_id
+    );
+    formData.value.commission_structure = commissionStructure;
+  }
 }
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([
-    doctorStore.fetchDoctors(),
-    productStore.fetchProducts(),
-    repStore.fetchReps()
-  ]);
+  try {
+    loading.value = true;
+    formError.value = null;
 
-  if (isEditing.value) {
-    const order = await orderStore.getOrderById(route.params.id as string);
-    if (order) {
-      formData.value = { ...order };
-      selectedProduct.value =
-        products.value.find((p: Product) => p.id === order.product_id) || null;
+    await Promise.all([
+      doctorStore.fetchDoctors(),
+      productStore.fetchProducts(),
+      repStore.fetchReps()
+    ]);
+
+    if (isEditing.value) {
+      const order = await orderStore.getOrderById(route.params.id as string);
+      if (order) {
+        formData.value = { ...order };
+        selectedProduct.value =
+          products.value.find((p: Product) => p.id === order.product_id) || null;
+      } else {
+        formError.value = 'Order not found';
+      }
     }
+  } catch (error) {
+    formError.value = 'Failed to load form data';
+    console.error('Form initialization error:', error);
+  } finally {
+    loading.value = false;
   }
 });
 </script>
