@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Product } from '@/types/models'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '../utils/supabase';
 
 export const useProductStore = defineStore('products', () => {
   // State
