@@ -44,18 +44,6 @@ const routes: RouteRecordRaw[] = [
 
   // Admin-only routes
   {
-    path: '/admin/customers',
-    name: 'customer-management',
-    component: () => import('../views/CustomerManagement.vue'),
-    meta: { requiresAuth: true, roles: ['admin'] },
-  },
-  {
-    path: '/admin/manufacturers',
-    name: 'manufacturer-management',
-    component: () => import('../views/ManufacturerManagement.vue'),
-    meta: { requiresAuth: true, roles: ['admin'] },
-  },
-  {
     path: '/admin/commission-structure',
     name: 'commission-structure',
     component: () => import('../views/CommissionStructureManagement.vue'),
