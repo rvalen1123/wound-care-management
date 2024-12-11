@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../utils/supabase';
 
 interface Customer {
   id: string;
