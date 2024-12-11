@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Order, Product } from '@/types/models';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../utils/supabase';
 import { useAuthStore } from '@/stores/auth';
 import { useRepStore } from '@/stores/repStore';
 import { ref, computed } from 'vue';
