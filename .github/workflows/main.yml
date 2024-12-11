@@ -1,17 +1,8 @@
-name: Build and Deploy
-
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,13 +12,19 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
-      
+
       - name: Clean Dependencies
-      run: |
-       rm -rf node_modules package-lock.json
+        run: |
+          rm -rf node_modules package-lock.json
 
       - name: Install Dependencies
-         run: npm install
+        run: npm install
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run type-check
 
       - name: Build for production
         run: npm run build
