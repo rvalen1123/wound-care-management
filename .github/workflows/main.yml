@@ -61,4 +61,4 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-args: '--prod'
           working-directory: .
-          scope: 'Medvinci' # Replace with your Vercel team name
+          scope: 'Medvinci'  # Replace with your actual Vercel team name
