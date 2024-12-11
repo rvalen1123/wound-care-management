@@ -1,140 +1,115 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import { 
-  createRouter, 
-  createWebHistory
-} from 'vue-router'
-import { createClient } from '@supabase/supabase-js'
-import App from './App.vue'
-import { setupPrimeVue } from './plugins/primevue'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import App from './App.vue';
+import { setupPrimeVue } from './plugins/primevue';
 
 // Import global styles
-import './index.css'
+import './index.css';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Define route types
-type RouteMeta = {
-  requiresAuth?: boolean;
-}
-
-type AppRoute = {
-  path: string;
-  name: string;
-  component: () => Promise<any>;
-  meta?: RouteMeta;
-}
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 // Define routes
-const routes: AppRoute[] = [
+const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'dashboard',
     component: () => import('./views/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/login',
     name: 'login',
-    component: () => import('./views/Login.vue')
+    component: () => import('./views/Login.vue'),
   },
   {
     path: '/orders',
     name: 'orders',
     component: () => import('./views/orders/OrderList.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/orders/new',
     name: 'new-order',
     component: () => import('./views/orders/OrderForm.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/orders/:id/edit',
     name: 'edit-order',
     component: () => import('./views/orders/OrderForm.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/reps',
     name: 'reps',
     component: () => import('./views/rep/RepDashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/doctors',
     name: 'doctors',
     component: () => import('./views/CustomerManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/reports',
     name: 'reports',
     component: () => import('./views/FinancialReporting.vue'),
-    meta: { requiresAuth: true }
-  }
-]
+    meta: { requiresAuth: true },
+  },
+];
 
 // Create Vue app instance
-const app = createApp(App)
+const app = createApp(App);
 
-// Setup store
-const pinia = createPinia()
-app.use(pinia)
+// Setup Pinia store
+const pinia = createPinia();
+app.use(pinia);
 
 // Setup router
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-// Navigation guard for auth
-router.beforeEach(async (to: any, from: any, next: (path?: string) => void) => {
-  const { data: { session } } = await supabase.auth.getSession()
-  const requiresAuth = to.matched.some((route: { meta?: RouteMeta }) => route.meta?.requiresAuth)
+// Navigation guard for authentication
+router.beforeEach(async (to, from, next) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const requiresAuth = to.matched.some((route) => route.meta?.requiresAuth);
 
   if (requiresAuth && !session) {
-    next('/login')
-  } else if (to.path === '/login' && session) {
-    next('/')
+    // Redirect to login if the route requires auth and no session exists
+    next({ name: 'login', query: { redirect: to.fullPath } });
+  } else if (to.name === 'login' && session) {
+    // Redirect logged-in users trying to access login
+    next({ name: 'dashboard' });
   } else {
-    next()
+    next();
   }
-})
+});
 
 // Setup PrimeVue
-setupPrimeVue(app)
+setupPrimeVue(app);
 
-// Error handler
-interface ErrorInfo {
-  message: string
-  stack?: string
-}
+// Global error handler
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Global Error:', err);
+  console.error('Instance:', instance);
+  console.error('Info:', info);
+};
 
-app.config.errorHandler = (
-  err: unknown,
-  instance: unknown,
-  info: string
-) => {
-  const error = err as Error | ErrorInfo
-  console.error('Global error:', error.message)
-  console.error('Stack trace:', error.stack)
-  console.error('Vue instance:', instance)
-  console.error('Error info:', info)
-}
+// Mount the application
+app.use(router);
+app.mount('#app');
 
-// Mount app
-app.use(router)
-app.mount('#app')
-
-// Export type-safe router instance
-export { router }
+export { router };
