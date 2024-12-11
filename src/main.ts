@@ -18,7 +18,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Define routes
+// Define routes (removing references to deleted views)
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -53,12 +53,6 @@ const routes: Array<RouteRecordRaw> = [
     path: '/reps',
     name: 'reps',
     component: () => import('./views/rep/RepDashboard.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/doctors',
-    name: 'doctors',
-    component: () => import('./views/CustomerManagement.vue'),
     meta: { requiresAuth: true },
   },
   {
